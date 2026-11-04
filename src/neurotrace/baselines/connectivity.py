@@ -164,9 +164,9 @@ def baseline_deviation(adj: np.ndarray, lo: int = 60, hi: int = 5, smooth: int =
     out = np.zeros(len(a), dtype=np.float64)
     csum = np.concatenate([np.zeros((1,) + a.shape[1:]), np.cumsum(a, axis=0)])
     for t in range(len(a)):
-        l, h = max(0, t - lo), max(0, t - hi)
-        if h - l >= 5:
-            ref = (csum[h] - csum[l]) / (h - l)
+        a0, a1 = max(0, t - lo), max(0, t - hi)
+        if a1 - a0 >= 5:
+            ref = (csum[a1] - csum[a0]) / (a1 - a0)
             out[t] = np.abs(a[t] - ref).mean()
     return out
 
