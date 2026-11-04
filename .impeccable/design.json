@@ -1,0 +1,387 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-04T10:32:20+00:00",
+  "title": "Design System: NEUROTRACE",
+  "extensions": {
+    "colorMeta": {
+      "paper": {
+        "role": "neutral",
+        "displayName": "Chart Paper",
+        "canonical": "oklch(97.3% 0.004 157.2)",
+        "tonalRamp": [
+          "oklch(15% 0.004 157.2)",
+          "oklch(26% 0.004 157.2)",
+          "oklch(38% 0.004 157.2)",
+          "oklch(49% 0.004 157.2)",
+          "oklch(61% 0.004 157.2)",
+          "oklch(72% 0.004 157.2)",
+          "oklch(84% 0.004 157.2)",
+          "oklch(95% 0.004 157.2)"
+        ]
+      },
+      "paper-deep": {
+        "role": "neutral",
+        "displayName": "Deep Paper",
+        "canonical": "oklch(94.9% 0.009 161.3)",
+        "tonalRamp": [
+          "oklch(15% 0.009 161.3)",
+          "oklch(26% 0.009 161.3)",
+          "oklch(38% 0.009 161.3)",
+          "oklch(49% 0.009 161.3)",
+          "oklch(61% 0.009 161.3)",
+          "oklch(72% 0.009 161.3)",
+          "oklch(84% 0.009 161.3)",
+          "oklch(95% 0.009 161.3)"
+        ]
+      },
+      "grid-minor": {
+        "role": "neutral",
+        "displayName": "Minor Rule",
+        "canonical": "oklch(93.1% 0.013 159.9)",
+        "tonalRamp": [
+          "oklch(15% 0.013 159.9)",
+          "oklch(26% 0.013 159.9)",
+          "oklch(38% 0.013 159.9)",
+          "oklch(49% 0.013 159.9)",
+          "oklch(61% 0.013 159.9)",
+          "oklch(72% 0.013 159.9)",
+          "oklch(84% 0.013 159.9)",
+          "oklch(95% 0.013 159.9)"
+        ]
+      },
+      "grid-major": {
+        "role": "neutral",
+        "displayName": "Major Rule",
+        "canonical": "oklch(87.7% 0.025 160.5)",
+        "tonalRamp": [
+          "oklch(15% 0.025 160.5)",
+          "oklch(26% 0.025 160.5)",
+          "oklch(38% 0.025 160.5)",
+          "oklch(49% 0.025 160.5)",
+          "oklch(61% 0.025 160.5)",
+          "oklch(72% 0.025 160.5)",
+          "oklch(84% 0.025 160.5)",
+          "oklch(95% 0.025 160.5)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Pen Ink",
+        "canonical": "oklch(24.1% 0.026 242.3)",
+        "tonalRamp": [
+          "oklch(15% 0.026 242.3)",
+          "oklch(26% 0.026 242.3)",
+          "oklch(38% 0.026 242.3)",
+          "oklch(49% 0.026 242.3)",
+          "oklch(61% 0.026 242.3)",
+          "oklch(72% 0.026 242.3)",
+          "oklch(84% 0.026 242.3)",
+          "oklch(95% 0.026 242.3)"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Ink 2",
+        "canonical": "oklch(37.4% 0.028 238.5)",
+        "tonalRamp": [
+          "oklch(15% 0.028 238.5)",
+          "oklch(26% 0.028 238.5)",
+          "oklch(38% 0.028 238.5)",
+          "oklch(49% 0.028 238.5)",
+          "oklch(61% 0.028 238.5)",
+          "oklch(72% 0.028 238.5)",
+          "oklch(84% 0.028 238.5)",
+          "oklch(95% 0.028 238.5)"
+        ]
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "Ink 3",
+        "canonical": "oklch(50.0% 0.024 232.6)",
+        "tonalRamp": [
+          "oklch(15% 0.024 232.6)",
+          "oklch(26% 0.024 232.6)",
+          "oklch(38% 0.024 232.6)",
+          "oklch(49% 0.024 232.6)",
+          "oklch(61% 0.024 232.6)",
+          "oklch(72% 0.024 232.6)",
+          "oklch(84% 0.024 232.6)",
+          "oklch(95% 0.024 232.6)"
+        ]
+      },
+      "blue": {
+        "role": "primary",
+        "displayName": "Record Ink Blue",
+        "canonical": "oklch(47.1% 0.109 251.9)",
+        "tonalRamp": [
+          "oklch(15% 0.109 251.9)",
+          "oklch(26% 0.109 251.9)",
+          "oklch(38% 0.109 251.9)",
+          "oklch(49% 0.109 251.9)",
+          "oklch(61% 0.109 251.9)",
+          "oklch(72% 0.109 251.9)",
+          "oklch(84% 0.109 251.9)",
+          "oklch(95% 0.109 251.9)"
+        ]
+      },
+      "blue-soft": {
+        "role": "primary",
+        "displayName": "Soft Blue",
+        "canonical": "oklch(88.4% 0.033 249.6)",
+        "tonalRamp": [
+          "oklch(15% 0.033 249.6)",
+          "oklch(26% 0.033 249.6)",
+          "oklch(38% 0.033 249.6)",
+          "oklch(49% 0.033 249.6)",
+          "oklch(61% 0.033 249.6)",
+          "oklch(72% 0.033 249.6)",
+          "oklch(84% 0.033 249.6)",
+          "oklch(95% 0.033 249.6)"
+        ]
+      },
+      "red": {
+        "role": "secondary",
+        "displayName": "Annotation Red Pen",
+        "canonical": "oklch(57.6% 0.191 30.2)",
+        "tonalRamp": [
+          "oklch(15% 0.191 30.2)",
+          "oklch(26% 0.191 30.2)",
+          "oklch(38% 0.191 30.2)",
+          "oklch(49% 0.191 30.2)",
+          "oklch(61% 0.191 30.2)",
+          "oklch(72% 0.191 30.2)",
+          "oklch(84% 0.191 30.2)",
+          "oklch(95% 0.191 30.2)"
+        ]
+      },
+      "red-soft": {
+        "role": "secondary",
+        "displayName": "Red Wash",
+        "canonical": "oklch(90.8% 0.033 29.4)",
+        "tonalRamp": [
+          "oklch(15% 0.033 29.4)",
+          "oklch(26% 0.033 29.4)",
+          "oklch(38% 0.033 29.4)",
+          "oklch(49% 0.033 29.4)",
+          "oklch(61% 0.033 29.4)",
+          "oklch(72% 0.033 29.4)",
+          "oklch(84% 0.033 29.4)",
+          "oklch(95% 0.033 29.4)"
+        ]
+      },
+      "green": {
+        "role": "tertiary",
+        "displayName": "Ground-Truth Green",
+        "canonical": "oklch(58.4% 0.106 163.7)",
+        "tonalRamp": [
+          "oklch(15% 0.106 163.7)",
+          "oklch(26% 0.106 163.7)",
+          "oklch(38% 0.106 163.7)",
+          "oklch(49% 0.106 163.7)",
+          "oklch(61% 0.106 163.7)",
+          "oklch(72% 0.106 163.7)",
+          "oklch(84% 0.106 163.7)",
+          "oklch(95% 0.106 163.7)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The thesis in the first viewport, max 15ch; emphasis turns red, never italic."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "One per record page, max 18ch, balanced wrapping."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Subsections and pipeline steps (22px in the event report and pipeline)."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Reading prose, max 68ch; 16px under 640px."
+      },
+      "lede": {
+        "displayName": "Lede",
+        "purpose": "Opening paragraph of a record page, ink 2, max 60ch."
+      },
+      "annotation": {
+        "displayName": "Annotation",
+        "purpose": "Italic semibold red margin notes beside headings and pipeline steps."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Uppercase condensed labels: buttons, toggles, table headers, stamp, nav."
+      },
+      "code": {
+        "displayName": "Code",
+        "purpose": "The run-it-yourself command block only."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Button colour changes (0.2s) and path-list rows lighting up (0.4s)."
+      },
+      {
+        "name": "chart-feed",
+        "value": "250ms per window step",
+        "purpose": "The paper advances right to left at four windows per second while playing; paused under reduced motion."
+      },
+      {
+        "name": "propagation-reveal",
+        "value": "420ms per channel",
+        "purpose": "The selected event's path lights one channel at a time; shown whole under reduced motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "compact",
+        "value": "640px"
+      },
+      {
+        "name": "pipeline-stack",
+        "value": "760px"
+      },
+      {
+        "name": "stack",
+        "value": "960px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Main action (Explore the event, View code); turns red on hover.",
+      "html": "<a class=\"ds-btn\" href=\"#\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M5 12h14M13 6l6 6-6 6\"/></svg>Explore the event</a>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; gap: 8px; font: 600 17px/1 var(--f-label, 'Barlow Condensed', 'Arial Narrow', sans-serif); letter-spacing: 0.05em; text-transform: uppercase; padding: 11px 16px; border-radius: 3px; border: 1.5px solid var(--ink, #14212b); background: var(--ink, #14212b); color: var(--paper, #f4f7f5); text-decoration: none; cursor: pointer; transition: background 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn svg { width: 16px; height: 16px; } .ds-btn:hover { background: var(--red, #d23b2a); border-color: var(--red, #d23b2a); color: #fff; } .ds-btn:focus-visible { outline: 2px solid var(--red, #d23b2a); outline-offset: 3px; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Secondary action beside a primary; fills with ink on hover.",
+      "html": "<a class=\"ds-btn-ghost\" href=\"#\">View code</a>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; gap: 8px; font: 600 17px/1 var(--f-label, 'Barlow Condensed', 'Arial Narrow', sans-serif); letter-spacing: 0.05em; text-transform: uppercase; padding: 11px 16px; border-radius: 3px; border: 1.5px solid var(--ink, #14212b); background: transparent; color: var(--ink, #14212b); text-decoration: none; cursor: pointer; transition: background 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn-ghost:hover { background: var(--ink, #14212b); color: var(--paper, #f4f7f5); } .ds-btn-ghost:focus-visible { outline: 2px solid var(--red, #d23b2a); outline-offset: 3px; }"
+    },
+    {
+      "name": "Segmented Toggle",
+      "kind": "chip",
+      "refersTo": "toggle-segment",
+      "description": "Two-state view switch (Topomap / 3D head); the pressed segment fills with ink.",
+      "html": "<div class=\"ds-toggle\" role=\"group\"><button aria-pressed=\"true\">Topomap</button><button aria-pressed=\"false\">3D head</button></div>",
+      "css": ".ds-toggle { display: inline-flex; border: 1px solid var(--ink, #14212b); border-radius: 3px; overflow: hidden; } .ds-toggle button { font: 600 14px var(--f-label, 'Barlow Condensed', 'Arial Narrow', sans-serif); letter-spacing: 0.06em; text-transform: uppercase; padding: 6px 10px; background: transparent; color: var(--ink, #14212b); border: 0; cursor: pointer; } .ds-toggle button:hover { background: var(--paper-deep, #e9f0ec); } .ds-toggle button[aria-pressed=\"true\"] { background: var(--ink, #14212b); color: var(--paper, #f4f7f5); } .ds-toggle button:focus-visible { outline: 2px solid var(--red, #d23b2a); outline-offset: -2px; }"
+    },
+    {
+      "name": "Legend Control",
+      "kind": "chip",
+      "refersTo": "legend-control-pressed",
+      "description": "Legend entry that toggles the layer it describes; the swatch matches the layer's ink.",
+      "html": "<div class=\"ds-legend\"><button aria-pressed=\"true\"><span class=\"ds-sw\" style=\"border-color:#265d96\"></span> dependency <span class=\"ds-sw\" style=\"border-color:#d23b2a;margin-left:6px\"></span> grew</button><button aria-pressed=\"false\"><span class=\"ds-sw\" style=\"border-color:#2f8f6a;border-top-style:dashed\"></span> ground truth</button></div>",
+      "css": ".ds-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font: 500 15px var(--f-label, 'Barlow Condensed', 'Arial Narrow', sans-serif); color: var(--ink-2, #33434e); } .ds-legend button { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; padding: 2px 4px; border-radius: 2px; } .ds-legend button:hover, .ds-legend button[aria-pressed=\"true\"] { background: var(--paper-deep, #e9f0ec); color: var(--ink, #14212b); } .ds-legend button:focus-visible { outline: 2px solid var(--red, #d23b2a); } .ds-sw { width: 22px; height: 0; border-top: 2px solid; display: inline-block; }"
+    },
+    {
+      "name": "Select",
+      "kind": "input",
+      "refersTo": "select",
+      "description": "Recording / segment picker in the map tools.",
+      "html": "<select class=\"ds-select\"><option>chb01 · seizure 1</option><option>synthetic · subject 7</option></select>",
+      "css": ".ds-select { font: 500 16px var(--f-label, 'Barlow Condensed', 'Arial Narrow', sans-serif); color: var(--ink, #14212b); background: var(--paper, #f4f7f5); border: 1px solid var(--grid-major, #c9dcd1); border-radius: 3px; padding: 6px 8px; } .ds-select:hover { border-color: var(--ink-3, #56666f); } .ds-select:focus-visible { outline: 2px solid var(--red, #d23b2a); outline-offset: 3px; }"
+    },
+    {
+      "name": "Record Header",
+      "kind": "nav",
+      "refersTo": "record-header",
+      "description": "Sticky ink band: a mark cell at gutter width, uppercase nav, a meta line and the disclaimer stamp.",
+      "html": "<header class=\"ds-rec\"><a class=\"ds-mark\" href=\"#\">NEUROTRACE</a><nav><a href=\"#\" aria-current=\"true\">Record</a><a href=\"#\">Method</a><a href=\"#\">Results</a></nav><span class=\"ds-meta\">10-20 montage · 128 Hz</span><span class=\"ds-stamp\">Research prototype · not for clinical use</span></header>",
+      "css": ".ds-rec { height: 52px; display: flex; align-items: center; gap: 20px; padding: 0 16px 0 0; background: var(--ink, #14212b); color: var(--paper, #f4f7f5); font-family: var(--f-label, 'Barlow Condensed', 'Arial Narrow', sans-serif); font-size: 15px; letter-spacing: 0.04em; } .ds-mark { min-width: 96px; padding: 0 14px; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 19px; letter-spacing: 0.08em; border-right: 1px solid #2c3b46; color: inherit; text-decoration: none; } .ds-rec nav { display: flex; gap: 18px; } .ds-rec nav a { color: #c6d3cc; text-decoration: none; text-transform: uppercase; } .ds-rec nav a:hover, .ds-rec nav a[aria-current=\"true\"] { color: var(--paper, #f4f7f5); } .ds-rec a:focus-visible { outline: 2px solid var(--red, #d23b2a); outline-offset: 3px; } .ds-meta { color: #8fa39a; white-space: nowrap; } .ds-stamp { margin-left: auto; border: 1.5px solid var(--red, #d23b2a); color: #ff8c7c; padding: 3px 10px; border-radius: 3px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; font-size: 14px; transform: rotate(-1.2deg); }"
+    },
+    {
+      "name": "Record Page Gutter",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "Signature: every section is a timestamped page of the record, on ruled paper with a left channel gutter.",
+      "html": "<section class=\"ds-page\"><div class=\"ds-gutter\"><span class=\"ds-code\">P2</span><span class=\"ds-time\">00:14:30</span></div><div class=\"ds-body\"><h2>Model the relationships, not only the signals.</h2><p>Each record page sits on chart paper under a 2px ink rule.</p></div></section>",
+      "css": ".ds-page { display: grid; grid-template-columns: 96px minmax(0, 1fr); border-top: 2px solid var(--ink, #14212b); background-color: var(--paper, #f4f7f5); background-image: linear-gradient(var(--grid-major, #c9dcd1) 1px, transparent 1px), linear-gradient(90deg, var(--grid-major, #c9dcd1) 1px, transparent 1px), linear-gradient(var(--grid-minor, #e1ebe5) 1px, transparent 1px), linear-gradient(90deg, var(--grid-minor, #e1ebe5) 1px, transparent 1px); background-size: 30px 30px, 30px 30px, 6px 6px, 6px 6px; color: var(--ink, #14212b); } .ds-gutter { border-right: 1px solid var(--grid-major, #c9dcd1); padding: 22px 10px; text-align: right; font-family: var(--f-label, 'Barlow Condensed', 'Arial Narrow', sans-serif); color: var(--ink-3, #56666f); } .ds-code { display: block; font-size: 26px; font-weight: 700; color: var(--ink, #14212b); letter-spacing: 0.04em; } .ds-time { display: block; font-size: 14px; margin-top: 2px; font-variant-numeric: tabular-nums; } .ds-body { padding: 32px 24px 40px; } .ds-body h2 { font: 600 40px/1.02 var(--f-label, 'Barlow Condensed', 'Arial Narrow', sans-serif); letter-spacing: -0.005em; margin: 0 0 14px; max-width: 18ch; } .ds-body p { font: 400 18px/1.55 var(--f-body, 'Source Sans 3', system-ui, sans-serif); margin: 0; max-width: 68ch; }"
+    },
+    {
+      "name": "Event Mark",
+      "kind": "custom",
+      "refersTo": "event-mark",
+      "description": "Signature: a numbered red circle on the timeline for each detected event; fills red when selected.",
+      "html": "<div class=\"ds-marks\"><button class=\"ds-ev\" aria-pressed=\"false\">1</button><button class=\"ds-ev\" aria-pressed=\"true\">2</button></div>",
+      "css": ".ds-marks { display: flex; gap: 12px; } .ds-ev { width: 18px; height: 18px; border-radius: 50%; padding: 0; cursor: pointer; border: 2px solid var(--red, #d23b2a); background: var(--paper, #f4f7f5); color: var(--red, #d23b2a); font: 700 11px var(--f-label, 'Barlow Condensed', 'Arial Narrow', sans-serif); } .ds-ev:hover { background: var(--red-soft, #f6d9d4); } .ds-ev[aria-pressed=\"true\"] { background: var(--red, #d23b2a); color: #fff; } .ds-ev:focus-visible { outline: 2px solid var(--red, #d23b2a); outline-offset: 3px; }"
+    },
+    {
+      "name": "Pipeline Step with Annotation",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "Method step: a page code, a title and prose, with a red pen annotation set off by a thin red rule.",
+      "html": "<ol class=\"ds-pipe\"><li><span class=\"ds-pcode\">02</span><div><h4>Learn a directed graph per window</h4><p>Edges are directed statistical dependency, not causation.</p></div><span class=\"ds-ann\">dependency, not causation</span></li></ol>",
+      "css": ".ds-pipe { list-style: none; margin: 0; padding: 0; border-top: 1.5px solid var(--ink, #14212b); } .ds-pipe li { display: grid; grid-template-columns: 48px minmax(0, 1fr) minmax(160px, 220px); gap: 0 24px; align-items: baseline; padding: 16px 0 18px; border-bottom: 1px solid var(--grid-major, #c9dcd1); color: var(--ink, #14212b); } .ds-pcode { font: 700 26px/1 var(--f-label, 'Barlow Condensed', 'Arial Narrow', sans-serif); } .ds-pipe h4 { font: 600 22px var(--f-label, 'Barlow Condensed', 'Arial Narrow', sans-serif); margin: 0 0 4px; } .ds-pipe p { font: 400 16.5px/1.55 var(--f-body, 'Source Sans 3', system-ui, sans-serif); color: var(--ink-2, #33434e); margin: 0; } .ds-ann { font: italic 600 16px var(--f-note, 'Source Sans 3', system-ui, sans-serif); color: var(--red, #d23b2a); border-left: 1px solid var(--red, #d23b2a); padding-left: 10px; }"
+    },
+    {
+      "name": "Results Table",
+      "kind": "card",
+      "refersTo": "",
+      "description": "Rules-only table: uppercase label headers over an ink rule, condensed tabular numbers, and the model's row on deep paper.",
+      "html": "<table class=\"ds-table\"><thead><tr><th>Variant</th><th class=\"num\">AUROC</th><th class=\"num\">False alarms / h</th></tr></thead><tbody><tr class=\"hl\"><td>full</td><td class=\"num\">0.00</td><td class=\"num\">0.0</td></tr><tr><td>baseline_granger</td><td class=\"num\">0.00</td><td class=\"num\">0.0</td></tr></tbody></table>",
+      "css": ".ds-table { width: 100%; border-collapse: collapse; font: 400 15px var(--f-body, 'Source Sans 3', system-ui, sans-serif); color: var(--ink, #14212b); } .ds-table th { font: 600 14px var(--f-label, 'Barlow Condensed', 'Arial Narrow', sans-serif); text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-3, #56666f); text-align: left; padding: 6px 8px; border-bottom: 1.5px solid var(--ink, #14212b); } .ds-table td { padding: 6px 8px; border-bottom: 1px solid var(--grid-major, #c9dcd1); font-variant-numeric: tabular-nums; } .ds-table td.num { font: 500 16px var(--f-label, 'Barlow Condensed', 'Arial Narrow', sans-serif); } .ds-table .num { text-align: right; } .ds-table tr.hl td { background: var(--paper-deep, #e9f0ec); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Chart Record",
+    "overview": "The whole site is one continuous EEG chart record. Cool white chart paper is ruled in a pale green grid. Traces, type and structure are drawn in blue-black pen ink, and a red annotation pen marks only what the model found. Each section is a later page of the same recording, with a channel-label gutter on the left that carries a page code and a timestamp. Findings are not placed on cards. They are written onto the paper as a reader's annotations.\n\nThe record is dense and calm, the way an instrument printout is. Colour goes only to what moves or matters: blue for learned dependency and the anomaly score, red for detected events, edges that changed, the disclaimer stamp and annotations, and green only for the synthetic ground truth. Everything else is ink on paper. Depth comes from rules and borders on a flat sheet. Nothing floats.\n\nThe site is light only, on purpose. It is a paper record, and a dark theme would turn it into a dashboard. Motion follows the chart feed: the paper moves right to left at a steady rate, the propagation path lights up one channel at a time, and nothing else animates. With reduced motion, the feed pauses and the path appears all at once.",
+    "keyCharacteristics": [
+      "Ruled chart paper (6px minor / 30px major grid) as the ground for every record page.",
+      "A left channel gutter on every page, holding a page code and a timestamp in condensed labels.",
+      "Three inks with fixed jobs (blue dependency, red event, green ground truth) on a blue-black base ink.",
+      "Annotations are italic semibold red text, set off by a thin red rule.",
+      "Flat sheet: hairline and 2px ink rules, no shadows, no cards.",
+      "Light only."
+    ],
+    "rules": [
+      {
+        "name": "The Rationed Ink Rule",
+        "body": "Blue means a learned dependency or the score. Red means something the model detected or changed, or the disclaimer. Green means injected ground truth. No ink is ever used for anything else, including decoration, status chips or brand accents.",
+        "section": "colors"
+      },
+      {
+        "name": "The Paper Record Rule",
+        "body": "The site is light only. Ground is always chart paper, and the only dark surfaces are the record header and the command block, both in pen ink.",
+        "section": "colors"
+      },
+      {
+        "name": "The Chart Label Rule",
+        "body": "Every number, channel name, time and code is set in Barlow Condensed with tabular figures. Body prose never carries data.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Sheet Rule",
+        "body": "Depth comes from ruled lines of different weights, never from shadows or lifted cards. A new surface either sits on the paper or is a dark ink band.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** put every new section on ruled chart paper, with the channel gutter (page code and timestamp) and a 2px ink rule on top.",
+      "**Do** keep each ink to its job: blue for dependency and score, red for detections, changes, the stamp and annotations, dashed green for synthetic ground truth only.",
+      "**Do** set numbers, channel names, times and controls in Barlow Condensed with tabular figures, and prose in Source Sans 3 at 68ch max.",
+      "**Do** make legend entries the controls for the layers they describe.",
+      "**Do** keep the disclaimer stamp in the header at every breakpoint.",
+      "**Do** pause the chart feed and reveal the full path at once when reduced motion is requested."
+    ],
+    "donts": [
+      "**Don't** add a dark theme. The record is paper, and it is light only.",
+      "**Don't** use box shadows, lifted cards or tiled feature grids. Separate content with ruled lines.",
+      "**Don't** use green for success or status, or red for emphasis that is not a detection, change, stamp or annotation.",
+      "**Don't** use gradients except to rule the chart grid.",
+      "**Don't** round rectangular controls beyond 3px. Circles are only for electrodes, event marks and icon buttons.",
+      "**Don't** animate anything other than the chart feed and the propagation reveal."
+    ]
+  }
+}
