@@ -60,7 +60,7 @@ def var_evidence(x: torch.Tensor, order: int, ridge: float = 1e-2) -> torch.Tens
     design = xl.permute(0, 3, 2, 1).reshape(n, t, order * c)  # column index = k * C + src
     y = x[..., order:].transpose(1, 2)  # (N, T, C)
     g = design.transpose(1, 2) @ design
-    lam = ridge * torch.diagonal(g, dim1=1, dim2=2).mean(dim=1)[:, None, None]
+    lam = ridge * torch.diagonal(g, dim1=1, dim2=2).mean(dim=1)[:, None, None] + 1e-6
     g_inv = torch.linalg.inv(g + lam * torch.eye(order * c, device=x.device, dtype=x.dtype))
     w = g_inv @ design.transpose(1, 2) @ y  # (N, p*C, dst)
     sigma2 = (y - design @ w).var(dim=1) + 1e-9  # (N, dst)

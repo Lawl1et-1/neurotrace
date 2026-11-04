@@ -142,8 +142,11 @@ class NeuroTrace(nn.Module):
     def norm_bands(self, bands: torch.Tensor) -> torch.Tensor:
         return (bands - self.band_mean) / self.band_std
 
-    def encode_windows(self, x: torch.Tensor, bands: torch.Tensor) -> dict[str, torch.Tensor]:
+    def encode_windows(self, x: torch.Tensor, bands: torch.Tensor, edge_mask: torch.Tensor | None = None) -> dict[str, torch.Tensor]:
         """Process N independent windows: x (N, C, L), standardised bands (N, C, F).
+
+        ``edge_mask`` (N, C, C) or (C, C), optional, multiplies the learned adjacency before the GNN
+        (used for edge-masking explanations).
 
         Returns the graph embedding ``z`` (N, D), the adjacency used by the GNN ``adj_gnn``,
         the learned part ``adj`` (or None), node embeddings and the within-window forecast error.
@@ -158,6 +161,9 @@ class NeuroTrace(nn.Module):
             out["var_err"] = ((pred - target) ** 2).mean(dim=(1, 2))  # (N,)
             mix = self.cfg.prior_mix
             learned = e["adj"].detach() if self.cfg.detach_graph else e["adj"]
+            if edge_mask is not None:
+                learned = learned * edge_mask
+                out["adj"] = out["adj"] * edge_mask
             adj_gnn = mix * self.prior[None] + (1 - mix) * learned
         elif self.cfg.graph == "static":
             adj_gnn = self.prior[None].expand(n, -1, -1)
@@ -186,11 +192,12 @@ class NeuroTrace(nn.Module):
             out["logits"] = self.cls(y).squeeze(-1)
         return out
 
-    def forward(self, x: torch.Tensor, bands: torch.Tensor, mask: torch.Tensor | None = None) -> dict[str, torch.Tensor]:
+    def forward(self, x: torch.Tensor, bands: torch.Tensor, mask: torch.Tensor | None = None,
+                edge_mask: torch.Tensor | None = None) -> dict[str, torch.Tensor]:
         """x (B, S, C, L), raw bands (B, S, C, F)."""
         b, s, c, length = x.shape
         nb = self.norm_bands(bands)
-        enc = self.encode_windows(x.reshape(b * s, c, length), nb.reshape(b * s, c, -1))
+        enc = self.encode_windows(x.reshape(b * s, c, length), nb.reshape(b * s, c, -1), edge_mask)
         out = self.temporal_forward(enc["z"].reshape(b, s, -1), mask)
         out["bands_n"] = nb
         for k in ("adj", "adj_gnn", "var_err"):
