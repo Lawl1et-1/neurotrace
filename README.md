@@ -90,37 +90,14 @@ attention. Synthetic recordings overlay the injected ground truth. Every state h
 
 ## Results
 
-All numbers are means over held-out subjects (`results/*/summary.csv`).
-
-**Synthetic (12 subjects, 4-fold leave-subjects-out)**
-
-| Model | Window AUROC | AUPRC | Edge AUROC | Event-edge AUROC | Path seed hit |
-|---|---|---|---|---|---|
-| NEUROTRACE (learned graph + GAT + Transformer) | 0.950 | 0.774 | 0.944 | 0.772 | 0.25 |
-| · diffusion GNN | 0.945 | 0.776 | 0.940 | 0.765 | 0.25 |
-| · no Transformer | 0.948 | 0.778 | 0.951 | 0.815 | 0.22 |
-| · no VAR evidence in the edge module | 0.962 | 0.784 | 0.729 | 0.722 | 0.28 |
-| · static distance graph | 0.944 | 0.785 | — | — | — |
-| · no graph | 0.945 | 0.784 | — | — | — |
-| · supervised head (uses labels) | 0.980 | 0.868 | 0.575 | 0.730 | 0.42 |
-| Per-channel CNN-LSTM | 0.950 | 0.790 | — | — | — |
-| Band-power deviation | **0.981** | 0.860 | — | — | — |
-| Granger (per window) | 0.219* | 0.106 | **0.974** | **0.900** | **0.89** |
-| PDC / DTF (per window) | 0.35 / 0.32* | 0.13 / 0.15 | 0.931 / 0.921 | 0.85 / 0.82 | 0.17 / 0.28 |
-
-\* connectivity-*change* used as an anomaly score; the graph is stable during an event and changes at
-its edges, so this score is below chance.
-
-What this says, plainly:
-- The learned graph recovers the injected directed couplings well (0.94), close to per-window
-  conditional Granger (0.97), which is the right estimator for a linear autoregressive world. Without the
-  conditional VAR evidence the edge module drops to 0.73.
-- For anomaly detection the graph adds nothing measurable on this data: all variants are within noise of
-  each other, and a simple band-power deviation score is better.
-- Propagation paths from the learned graph find the true seed in only ~25 % of events; Granger-based
-  paths find it in 89 %. Explanation quality lags edge recovery.
-
-**CHB-MIT (6 subjects, leave-one-subject-out):** see `results/chbmit/summary.csv` and the live site.
+**Being regenerated.** An audit of the first evaluation found two flaws, now fixed (see
+`docs/DECISIONS.md`, D13): the connectivity anomaly score used window-to-window change, which is
+dominated by estimation noise, and event matching admitted alarms up to 15 s before onset, which
+produced negative latencies. The synthetic benchmark was also too easy (a band-power baseline reached
+0.98 window AUROC), so it was made harder (D15). The full synthetic study and the CHB-MIT
+leave-one-subject-out run are being re-run; tables will be added here from `results/*/summary.csv`
+(mean ± sd, 95 % CI and number of test subjects per metric) once they exist. No CHB-MIT result is
+claimed before then.
 
 ## Limitations
 

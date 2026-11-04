@@ -33,12 +33,11 @@ Each entry: **decision**, **why**, **consequence / limit**.
 - **Why:** swept on synthetic data: 0.001 → edge AUROC ~0.58, 0.02 → ~0.91, 0.03 → ~0.94, 0.05 and 0.1 → all gates collapse to zero (AUROC ~0.45). Chosen on synthetic data and transferred unchanged to CHB-MIT, where there is no ground truth to tune it.
 
 ## D8. Self-supervised objective and anomaly score
-- **Decision:** the Transformer predicts the band power of the next window (causal attention; `objective=masked` reconstructs masked windows instead) and is trained only on sequences with no labelled window. Anomaly score = robust z(next-window error) + λ_graph · robust z(|A_t − A_t−1|) + 0.5 · robust z(within-window forecast error), with a trailing 5-window moving average so it stays usable online. Robust statistics and the alarm threshold come from the validation subject's normal windows, never from the test subject.
+- **Decision:** the Transformer predicts the band power of the next window (causal attention; `objective=masked` reconstructs masked windows instead) and is trained only on sequences with no labelled window. Anomaly score = robust z(next-window error) + λ_graph · robust z(graph deviation from the preceding minute, D13) + 0.5 · robust z(within-window forecast error), with a trailing 5-window moving average so it stays usable online. Robust statistics and the alarm threshold come from the validation subject's normal windows, never from the test subject.
 - **Why:** band power is predictable enough to make "surprise" meaningful, while raw EEG two seconds ahead is mostly unpredictable noise.
 
 ## D9. Baselines are first-class
-- **Decision:** every table reports per-window Pearson, coherence, Granger, PDC and DTF (edge recovery, plus a connectivity-change anomaly score), a band-power deviation score and a per-channel CNN-LSTM forecaster.
-- **Consequence:** on both datasets a simple band-power deviation score is a strong anomaly detector, and connectivity-change scores are near or below chance (the graph is *stable* during an event; it changes at onset and offset). Both are reported as found.
+- **Decision:** every table reports per-window Pearson, coherence, Granger, PDC and DTF (edge recovery, plus a connectivity-deviation anomaly score), a band-power deviation score and a per-channel CNN-LSTM forecaster, scored with exactly the same thresholds, matching and statistics as the model.
 
 ## D10. Explanations at window resolution
 - **Decision:** propagation paths are ordered at the 1 s stride, from the learned graph (greedy walk over edges that grew vs the preceding minute) and, separately, from band power (first time each channel leaves its baseline).
@@ -47,3 +46,21 @@ Each entry: **decision**, **why**, **consequence / limit**.
 ## D11. Visualizer as a static site
 - **Decision:** React + Vite + three.js reading pre-exported JSON (`scripts/export_explanations.py`), deployed to GitHub Pages; FastAPI serves the same files locally.
 - **Why:** reviewers open a link and see real model output with no server to keep alive. The JSON is quantised (adjacency 0–99, traces as z × 25 at 64 Hz) and split per recording, so the first load is small.
+
+## D12. Per-patient adaptive normalisation of the score (CHB-MIT)
+- **Decision:** on CHB-MIT each score component is z-scored against the same recording's preceding 600 windows (10 min, current window excluded) before the components are combined; the alarm threshold is still fixed on the validation patient's normal windows.
+- **Why:** the first fold showed a validation patient (chb03) whose normal scores were ~5× those of the test patient (chb05): the threshold transferred from chb03 never fired on chb05 (no alarm at all on the test patient). Trailing normalisation is causal (usable online) and uses no labels.
+- **Limit:** a long seizure inside the trailing window lowers later z-scores; the first 30 windows of a file have no baseline and score 0.
+
+## D13. Evaluation audit: connectivity score and event matching
+- **Findings:** (1) the connectivity anomaly score |A_t − A_t−1| sat at the same level everywhere (per-window estimation noise dominates consecutive differences) and *dropped* during events, when a strong coupling makes estimates more stable: window AUROCs of 0.2–0.4 were a design error, not a sign error. (2) Event matching accepted alarms up to 15 s before onset as detections, giving negative latencies.
+- **Decision:** the connectivity score — for the baselines and for the model's own graph term — is now the deviation of the (3-window smoothed) graph from the mean graph of the preceding minute (`baseline_deviation`). An event counts as detected only if the score crosses the threshold from the window straddling the onset onwards (latency ≥ −1 window); earlier crossings are false alarms. Unit tests cover a known easy case (a coupling switching on: Granger deviation AUROC > 0.9, latency 0–3 s), label alignment and the matching rules.
+- **Reporting:** summaries give mean, sd, n and a 95 % t-interval per metric over test subjects (subjects are the unit; events and hours are pooled within a subject first).
+
+## D14. Seed rule for propagation paths
+- **Finding:** on v1 synthetic data the learned-graph path found the true seed in 25 % of events vs 89 % for Granger. Diagnosis: the Granger Wald statistic grows with coupling strength (change on the seed's out-edges ≈ 228 vs ≈ 99 on other event edges vs ≈ 0.3 on non-edges), so "largest net outgoing increase" finds the seed; the learned gates are bounded sigmoids (0.015 vs 0.012 vs −0.003), so every new coupling is just "on" and the rule picks nodes with many children. Seeding from the earliest window where the score rises did not help (19 %): the score rises in the first event window (median lag 0.5 windows) and all event edges switch on within one 1 s window, while true delays are 15–40 ms.
+- **Decision:** paths start from `hybrid` = band-power deviation × (normalised outgoing increase + 0.2) (53 % on v1 data, chosen on those test folds, so its first out-of-sample check is the v2 rerun); `net` is still reported for every estimator.
+
+## D15. Harder synthetic benchmark (v2)
+- **Decision:** 20 subjects (5 folds), weaker seed drive (×1.2), weaker event couplings (0.25–0.4), more volume conduction (0.25) and only a quarter of events retune the seed to a slow rhythm.
+- **Why:** in v1 a band-power deviation score reached 0.98 window AUROC: events were detectable from spectra alone and could not separate methods. On a 3-subject probe, v2-like settings bring band power to ≈ 0.82–0.92 and Granger deviation to ≈ 0.80–0.83, while Granger edge recovery stays ≈ 0.95.

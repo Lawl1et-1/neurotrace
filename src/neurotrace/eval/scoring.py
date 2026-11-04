@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 import numpy as np
 import torch
 
+from neurotrace.baselines.connectivity import baseline_deviation
 from neurotrace.data.datasets.base import WindowedRecording
 from neurotrace.models.neurotrace import NeuroTrace
 
@@ -20,7 +21,7 @@ class RecordingOutput:
     times: np.ndarray
     labels: np.ndarray
     pred_err: np.ndarray  # next-window band-power error (NaN for the first seq_len - 1 windows)
-    graph_change: np.ndarray  # mean |A_t - A_{t-1}| of the learned adjacency (0 without one)
+    graph_change: np.ndarray  # deviation of the learned graph from the preceding minute (0 without one)
     var_err: np.ndarray  # within-window forecast error of the learned graph (0 without one)
     adj: np.ndarray | None  # (N, C, C) learned adjacency, float16
     prob: np.ndarray | None = None  # supervised seizure probability, if trained with a head
@@ -71,7 +72,7 @@ def run_recording(model: NeuroTrace, rec: WindowedRecording, device: str = "cpu"
 
     if adjs:
         adj = torch.cat(adjs).float().numpy()
-        gc = np.concatenate([[0.0], np.abs(np.diff(adj, axis=0)).mean(axis=(1, 2))]).astype(np.float32)
+        gc = baseline_deviation(adj).astype(np.float32)
         var_err = torch.cat(var).numpy()
         adj_out = adj.astype(np.float16)
     else:
@@ -89,9 +90,11 @@ class ScoreCalibration:
     lambda_graph: float = 1.0
     lambda_var: float = 0.5
     smooth: int = 5
+    adaptive: int = 0  # >0: z-score against the recording's own trailing `adaptive` windows (causal)
 
     @classmethod
-    def fit(cls, outs: list[RecordingOutput], lambda_graph: float = 1.0, lambda_var: float = 0.5, smooth: int = 5) -> ScoreCalibration:
+    def fit(cls, outs: list[RecordingOutput], lambda_graph: float = 1.0, lambda_var: float = 0.5, smooth: int = 5,
+            adaptive: int = 0) -> ScoreCalibration:
         stats = {}
         for k in ("pred_err", "graph_change", "var_err"):
             v = np.concatenate([o.components()[k][~o.labels] for o in outs])
@@ -99,12 +102,27 @@ class ScoreCalibration:
             med = float(np.median(v)) if len(v) else 0.0
             iqr = float(np.subtract(*np.percentile(v, [75, 25]))) if len(v) else 1.0
             stats[k] = (med, iqr if iqr > 1e-8 else 1.0)
-        return cls(stats, lambda_graph, lambda_var, smooth)
+        return cls(stats, lambda_graph, lambda_var, smooth, adaptive)
 
     def z(self, out: RecordingOutput, key: str) -> np.ndarray:
+        """Robust z-score of one component.
+
+        With ``adaptive`` set, each window is compared with the median / IQR of the same recording's
+        preceding ``adaptive`` windows (the current window excluded), so the score adapts to each
+        patient's own baseline without looking ahead. Error levels differ several-fold between
+        CHB-MIT patients, and a threshold fixed on one patient's scale does not transfer (D12).
+        """
+        v = out.components()[key].astype(np.float64)
+        if self.adaptive > 0:
+            import pandas as pd
+
+            past = pd.Series(v).shift(1).rolling(self.adaptive, min_periods=30)
+            med = past.median().to_numpy()
+            iqr = (past.quantile(0.75) - past.quantile(0.25)).to_numpy()
+            iqr = np.where(np.isfinite(iqr) & (iqr > 1e-8), iqr, np.nan)
+            return np.nan_to_num((v - med) / iqr, nan=0.0, posinf=0.0, neginf=0.0).astype(np.float32)
         med, iqr = self.stats[key]
-        v = (out.components()[key] - med) / iqr
-        return np.nan_to_num(v, nan=0.0)
+        return np.nan_to_num((v - med) / iqr, nan=0.0).astype(np.float32)
 
     def score(self, out: RecordingOutput) -> np.ndarray:
         """Anomaly score = z(pred_err) + lambda_graph * z(graph_change) + lambda_var * z(var_err),

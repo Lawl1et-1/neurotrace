@@ -57,13 +57,19 @@ def event_metrics(
     stride_s: float,
     refractory_s: float = 60.0,
     max_latency_s: float = 60.0,
+    pre_windows: int = 1,
+    post_grace_s: float = 10.0,
 ) -> dict[str, float]:
     """Event-level evaluation of an online detector that alarms when ``score > threshold``.
 
-    * An event is *detected* if an alarm starts inside it or within ``max_latency_s`` after onset.
-      Latency = first alarm time - onset (seconds; can be <0 if the alarm starts just before).
-    * Alarms are grouped: after an alarm, new alarms are suppressed for ``refractory_s``.
-    * A false alarm is an alarm that does not overlap any event (+/- the latency window).
+    * An event spanning windows [a, b) is *detected* when the score exceeds the threshold anywhere
+      in [a - pre_windows, min(b, a + max_latency)). ``pre_windows = 1`` only admits the window that
+      straddles the onset (a window is labelled positive when at least half of it is inside the
+      event, so the one before can already contain the onset). Latency = first such window - a, in
+      seconds; it is therefore never below ``-pre_windows * stride_s``.
+    * Alarms are the rising edges of ``score > threshold``, grouped with a ``refractory_s`` dead time.
+    * A false alarm is an alarm outside every [a - pre_windows, b + post_grace) interval. An early
+      crossing before that interval is a false alarm, never a detection with negative latency.
     * False alarms per hour use the duration of the recording outside events.
     """
     s = np.nan_to_num(score, nan=-np.inf)
@@ -76,17 +82,18 @@ def event_metrics(
             last = i
     events = events_from_labels(labels)
     lat_win = int(round(max_latency_s / stride_s))
+    grace = int(round(post_grace_s / stride_s))
     detected, latencies = 0, []
-    matched = set()
     for a, b in events:
-        hits = [al for al in alarms if a - lat_win // 4 <= al < min(b, a + lat_win) + 1]
-        if hits:
+        lo, hi = max(0, a - pre_windows), min(b, a + lat_win)
+        hit = np.flatnonzero(above[lo:hi])
+        if len(hit):
             detected += 1
-            latencies.append((hits[0] - a) * stride_s)
-            matched.update(hits)
-        # alarms during the event that started earlier also count as matched
-        matched.update(al for al in alarms if a <= al < b + lat_win)
-    false_alarms = len([al for al in alarms if al not in matched])
+            latencies.append((lo + int(hit[0]) - a) * stride_s)
+    covered = np.zeros(len(labels), dtype=bool)
+    for a, b in events:
+        covered[max(0, a - pre_windows) : b + grace] = True
+    false_alarms = sum(1 for al in alarms if not covered[al])
     hours = (len(labels) - labels.sum()) * stride_s / 3600.0
     return {
         "n_events": len(events),

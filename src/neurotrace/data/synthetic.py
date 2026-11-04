@@ -147,6 +147,10 @@ def simulate_subject(
     mixing: float = 0.15,
     noise_std: float = 1.0,
     seed: int = 0,
+    seed_drive: float = SEED_DRIVE,
+    seed_radius: float = SEED_RADIUS,
+    event_coupling: tuple[float, float] = EVENT_COUPLING,
+    rhythm_change: float = 1.0,
 ) -> SyntheticRecording:
     """Simulate one subject. ``base_adj`` is jittered slightly so subjects are not identical."""
     rng = np.random.default_rng(seed)
@@ -192,13 +196,16 @@ def simulate_subject(
         edges, order, _ = _random_tree(seed_ch, event_edges, nb, rng)
         # the seed switches to a slow, sharply tuned rhythm (seizure-like) with stronger drive
         sc = self_coef.copy()
-        sc[:, seed_ch] = _ar2_coeffs(rng.uniform(3.0, 7.0), sfreq, SEED_RADIUS)
+        # with probability `rhythm_change` the seed also retunes to a slow rhythm (a spectral
+        # signature); otherwise the event is a coupling change plus a modest drive increase only
+        if rng.random() < rhythm_change:
+            sc[:, seed_ch] = _ar2_coeffs(rng.uniform(3.0, 7.0), sfreq, seed_radius)
         coup = np.zeros((MAX_LAG, c, c))
         lags = {}
         for s, d in edges:
             lag = int(rng.integers(3, MAX_LAG + 1))
             lags[(s, d)] = lag
-            coup[lag - 1, d, s] = rng.uniform(*EVENT_COUPLING)
+            coup[lag - 1, d, s] = rng.uniform(*event_coupling)
         while _companion_radius(sc, base_coup + coup) >= 0.975:
             coup *= 0.9
         arrival = {seed_ch: 0.0}
@@ -223,7 +230,7 @@ def simulate_subject(
     state = np.full(n + MAX_LAG, -1, dtype=int)
     for k, ev in enumerate(events):
         state[MAX_LAG + int(ev.onset_s * sfreq) : MAX_LAG + int(ev.offset_s * sfreq)] = k
-        eps[ev.seed, state == k] *= SEED_DRIVE
+        eps[ev.seed, state == k] *= seed_drive
     for t in range(MAX_LAG, n + MAX_LAG):
         if state[t] < 0:
             coup, sc = base_coup, self_coef

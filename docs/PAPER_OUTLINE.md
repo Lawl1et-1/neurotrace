@@ -25,7 +25,7 @@
 6. Explanations: graph-change propagation path, band-power onset path, edge masking, Integrated Gradients (channel × window × band), attention.
 
 ## 4. Experiments
-- **Synthetic ground truth:** 12 subjects, 19 damped oscillators on the 10-20 layout, sparse lagged couplings, mild volume conduction, 3 injected events each (seed rhythm + tree of new couplings). 4-fold leave-subjects-out.
+- **Synthetic ground truth (v2, harder):** 20 subjects, 19 damped oscillators on the 10-20 layout, sparse lagged couplings, mild volume conduction, 3 injected events each (tree of new couplings; a quarter also retune the seed rhythm). 5-fold leave-subjects-out.
   - Edge AUROC of the learned graph vs Pearson / coherence / Granger / PDC / DTF.
   - Event-edge AUROC (graph change during events vs injected edges) and propagation-path agreement (seed hit, recall, Kendall τ).
   - Window AUROC/AUPRC, sensitivity, latency, false alarms/h.
@@ -34,10 +34,9 @@
 - All numbers: `results/synthetic/summary.csv`, `results/chbmit/summary.csv`.
 
 ## 5. Results (to be written from the CSVs)
-- Synthetic: learned edges ≈0.94 edge AUROC, just below per-window conditional Granger (≈0.97, the right estimator for a linear VAR world) and above PDC/DTF/coherence/Pearson; removing the VAR evidence drops it to ≈0.73.
-- Synthetic anomaly detection: all self-supervised variants ≈0.95 window AUROC; the graph adds no measurable detection benefit there; a band-power deviation score reaches ≈0.98.
-- Propagation paths: graph-based paths find the seed in roughly a quarter of events; Granger-based paths in most of them — explanation quality lags edge recovery.
-- CHB-MIT: see `results/chbmit/summary.csv`; compare with the band-power baseline (≈0.97 window AUROC) and connectivity-change baselines (≈chance).
+- Synthetic (v2, 20 subjects, 5 folds): edge AUROC of the learned graph vs per-window estimators; event-edge AUROC; path agreement under both seed rules; window and event metrics with 95 % CIs.
+- CHB-MIT (6 subjects, leave-one-subject-out): window AUROC/AUPRC, sensitivity, latency, false alarms/h with per-patient adaptive normalisation; compared with band-power and connectivity-deviation baselines.
+- No numbers are stated here until `results/*/summary.csv` exist.
 
 ## 6. Limitations
 - Electrodes/bipolar derivations ≠ regions; edges ≠ causes.

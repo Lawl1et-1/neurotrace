@@ -147,6 +147,30 @@ def connectivity(windows: np.ndarray, sfreq: float, method: str, order: int = 5)
     return np.stack(out).astype(np.float32)
 
 
+def baseline_deviation(adj: np.ndarray, lo: int = 60, hi: int = 5, smooth: int = 3) -> np.ndarray:
+    """Anomaly score: how far the (lightly smoothed) graph at t is from the graph of the preceding
+    minute, i.e. mean |A_t - mean(A_{t-lo} .. A_{t-hi})| on mean-normalised matrices. Causal.
+
+    This replaces the window-to-window change |A_t - A_{t-1}| as the connectivity anomaly score:
+    per-window estimates are noisy, so consecutive differences are dominated by estimation noise and
+    actually *drop* during an event, when a strong coupling makes the estimate more stable (D13).
+    """
+    a = adj / (adj.mean(axis=(1, 2), keepdims=True) + 1e-12)
+    csum = np.concatenate([np.zeros((1,) + a.shape[1:]), np.cumsum(a, axis=0)])
+    if smooth > 1:  # trailing average over `smooth` windows (causal)
+        idx = np.arange(len(a))
+        start = np.maximum(0, idx - smooth + 1)
+        a = (csum[idx + 1] - csum[start]) / (idx + 1 - start)[:, None, None]
+    out = np.zeros(len(a), dtype=np.float64)
+    csum = np.concatenate([np.zeros((1,) + a.shape[1:]), np.cumsum(a, axis=0)])
+    for t in range(len(a)):
+        l, h = max(0, t - lo), max(0, t - hi)
+        if h - l >= 5:
+            ref = (csum[h] - csum[l]) / (h - l)
+            out[t] = np.abs(a[t] - ref).mean()
+    return out
+
+
 def graph_change(adj: np.ndarray) -> np.ndarray:
     """Anomaly baseline: L1 change of a (N, C, C) connectivity sequence between consecutive windows,
     each matrix scaled by its own mean so a global power change alone does not dominate."""

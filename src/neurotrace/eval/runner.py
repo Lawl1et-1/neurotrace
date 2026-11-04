@@ -21,7 +21,7 @@ import numpy as np
 import pandas as pd
 from omegaconf import DictConfig, OmegaConf
 
-from neurotrace.baselines.connectivity import connectivity, graph_change
+from neurotrace.baselines.connectivity import baseline_deviation, connectivity
 from neurotrace.baselines.neural import channel_baseline_errors
 from neurotrace.data.datasets.base import WindowedRecording
 from neurotrace.data.splits import by_subject, leave_subjects_out
@@ -68,6 +68,14 @@ def _robust_z(v: np.ndarray, ref: np.ndarray) -> np.ndarray:
     return np.nan_to_num((v - med) / iqr)
 
 
+def _trailing_z(v: np.ndarray, n: int) -> np.ndarray:
+    """Causal robust z-score against the preceding ``n`` values (see ScoreCalibration.z)."""
+    past = pd.Series(v.astype(np.float64)).shift(1).rolling(n, min_periods=30)
+    iqr = (past.quantile(0.75) - past.quantile(0.25)).to_numpy()
+    iqr = np.where(np.isfinite(iqr) & (iqr > 1e-8), iqr, np.nan)
+    return np.nan_to_num((v - past.median().to_numpy()) / iqr, nan=0.0, posinf=0.0, neginf=0.0)
+
+
 def evaluate_recordings(name: str, fold: int, scores: list[np.ndarray], outs_or_recs, threshold: float,
                         stride_s: float, extra_fn=None) -> list[dict]:
     rows = []
@@ -82,30 +90,34 @@ def evaluate_recordings(name: str, fold: int, scores: list[np.ndarray], outs_or_
 
 
 def synthetic_extras(rec: WindowedRecording, adj: np.ndarray | None) -> dict:
-    """Edge AUROC, direction accuracy, event-edge recovery and path agreement for one subject."""
+    """Edge AUROC, event-edge recovery and path agreement for one subject.
+
+    Paths are scored with two seed rules (``net`` and ``hybrid``, see ``choose_seed``) so the
+    learned graph and classical estimators are compared on the same footing.
+    """
     if adj is None or "adj" not in rec.extra:
         return {}
     a = adj.astype(np.float32)
     out = {"edge_auroc": edge_auroc(a, rec.extra["adj"])}
-    ev_auc, seeds, recalls, taus = [], [], [], []
+    ev_auc = []
+    agg: dict[str, list[float]] = {}
     for ev in rec.extra["events"]:
         lo, hi = int(ev.onset_s / rec.stride_s) + 1, int(ev.offset_s / rec.stride_s) - 1
         t = np.zeros(a.shape[1:], bool)
         for s, d in ev.edges:
             t[s, d] = True
         ev_auc.append(edge_auroc(delta_graph(a, lo, hi, stride_s=rec.stride_s), t))
-        steps, _ = graph_path(a, lo, hi, rec.times, rec.ch_names, stride_s=rec.stride_s, max_steps=len(ev.order))
-        pa = path_agreement([s.channel for s in steps], ev.order)
-        seeds.append(pa["seed_hit"])
-        recalls.append(pa["recall"])
-        taus.append(pa["kendall"])
+        for rule in ("net", "hybrid"):
+            steps, _ = graph_path(a, lo, hi, rec.times, rec.ch_names, stride_s=rec.stride_s,
+                                  max_steps=len(ev.order), seed_rule=rule, bands=rec.bands)
+            pa = path_agreement([s.channel for s in steps], ev.order)
+            sfx = "" if rule == "hybrid" else "_net"
+            for k, v in pa.items():
+                agg.setdefault(f"path_{k}{sfx}", []).append(v)
     if ev_auc:
-        out.update({
-            "event_edge_auroc": float(np.nanmean(ev_auc)),
-            "path_seed_hit": float(np.mean(seeds)),
-            "path_recall": float(np.mean(recalls)),
-            "path_kendall": float(np.nanmean(taus)) if np.isfinite(taus).any() else float("nan"),
-        })
+        out["event_edge_auroc"] = float(np.nanmean(ev_auc))
+        for k, v in agg.items():
+            out[k] = float(np.nanmean(v)) if np.isfinite(v).any() else float("nan")
     return out
 
 
@@ -130,7 +142,7 @@ def run_cv(cfg: DictConfig, recs: list[WindowedRecording], device: str, out_dir:
                 val_scores = [causal_smooth(np.nan_to_num(o.prob), 5) for o in val_out]
                 scores = [causal_smooth(np.nan_to_num(o.prob), 5) for o in test_out]
             else:
-                cal = ScoreCalibration.fit(val_out, lambda_graph=vc.train.lambda_graph)
+                cal = ScoreCalibration.fit(val_out, lambda_graph=vc.train.lambda_graph, adaptive=int(ev.get("adaptive_norm", 0)))
                 val_scores = [cal.score(o) for o in val_out]
                 scores = [cal.score(o) for o in test_out]
             normal = np.concatenate([s[~o.labels] for s, o in zip(val_scores, val_out, strict=True)])
@@ -153,7 +165,10 @@ def run_cv(cfg: DictConfig, recs: list[WindowedRecording], device: str, out_dir:
 
 def classical_baselines(cfg: DictConfig, recs: list[WindowedRecording], methods: list[str],
                         log=print) -> pd.DataFrame:
-    """Connectivity-change and band-power-deviation anomaly scores, plus edge recovery (synthetic).
+    """Connectivity-deviation and band-power-deviation anomaly scores, plus edge recovery (synthetic).
+
+    The connectivity score is the distance of the current graph from the preceding minute's graph
+    (``baseline_deviation``), the same quantity the model's own graph term uses.
 
     The threshold is the ``threshold_pct`` percentile of the subject's own normal windows *from a
     different subject* (the next one in the list) so it is not tuned on the test subject.
@@ -166,7 +181,7 @@ def classical_baselines(cfg: DictConfig, recs: list[WindowedRecording], methods:
         idx = np.arange(0, len(r), every)
         for m in methods:
             a = connectivity(r.windows[idx].astype(np.float64), r.sfreq, m)
-            sc = np.interp(np.arange(len(r)), idx, graph_change(a))
+            sc = np.interp(np.arange(len(r)), idx, baseline_deviation(a, lo=60 // every, hi=max(1, 5 // every)))
             res[m] = (sc, a, idx)
         # band power deviation: how far the window's band powers are from the recording's median
         b = r.bands.reshape(len(r), -1)
@@ -181,8 +196,12 @@ def classical_baselines(cfg: DictConfig, recs: list[WindowedRecording], methods:
         ref = rec_list[(i + 1) % len(rec_list)]
         for m, (sc, a, _idx) in per[r.record].items():
             ref_sc = per[ref.record][m][0]
-            z = causal_smooth(_robust_z(sc, ref_sc[~ref.labels]), 5)
-            zref = causal_smooth(_robust_z(ref_sc, ref_sc[~ref.labels]), 5)
+            if ev.get("adaptive_norm", 0):
+                z = causal_smooth(_trailing_z(sc, int(ev.adaptive_norm)), 5)
+                zref = causal_smooth(_trailing_z(ref_sc, int(ev.adaptive_norm)), 5)
+            else:
+                z = causal_smooth(_robust_z(sc, ref_sc[~ref.labels]), 5)
+                zref = causal_smooth(_robust_z(ref_sc, ref_sc[~ref.labels]), 5)
             thr = float(np.percentile(zref[~ref.labels], ev.threshold_pct))
             row = {"variant": f"baseline_{m}", "fold": -1, "subject": r.subject, "record": r.record}
             row.update(window_metrics(z, r.labels))
@@ -195,19 +214,34 @@ def classical_baselines(cfg: DictConfig, recs: list[WindowedRecording], methods:
 
 
 METRICS = ["auroc", "auprc", "sensitivity", "median_latency_s", "fa_per_hour", "edge_auroc",
-           "event_edge_auroc", "path_seed_hit", "path_recall", "path_kendall"]
+           "event_edge_auroc", "path_seed_hit", "path_recall", "path_kendall",
+           "path_seed_hit_net", "path_recall_net", "path_kendall_net"]
 
 
 def summarise(df: pd.DataFrame) -> pd.DataFrame:
-    """Mean and std over test subjects for each variant (one row per variant)."""
+    """One row per variant. Each metric gets ``_mean``, ``_std``, ``_n`` (test subjects with a
+    defined value) and ``_ci95`` (half-width of a t-interval over subjects). Subjects, not windows
+    or recordings, are the unit: event counts and hours are pooled within a subject first.
+    """
+    from scipy import stats
+
     g = df.groupby(["variant", "subject"])
     subj = g.mean(numeric_only=True).reset_index()
-    # pool events and hours within a subject rather than averaging per-file rates
     pooled = g[["detected", "n_events", "false_alarms", "hours"]].sum().reset_index()
     subj["sensitivity"] = pooled["detected"] / pooled["n_events"].replace(0, np.nan)
     subj["fa_per_hour"] = pooled["false_alarms"] / pooled["hours"].replace(0, np.nan)
-    cols = [m for m in METRICS if m in subj]
-    agg = subj.groupby("variant")[cols].agg(["mean", "std"])
-    agg.columns = [f"{a}_{b}" for a, b in agg.columns]
-    agg["n_subjects"] = subj.groupby("variant").size()
-    return agg.reset_index()
+    rows = []
+    for variant, d in subj.groupby("variant"):
+        row: dict = {"variant": variant, "n_subjects": len(d)}
+        for m in METRICS:
+            if m not in d:
+                continue
+            v = d[m].to_numpy(dtype=float)
+            v = v[np.isfinite(v)]
+            n = len(v)
+            row[f"{m}_mean"] = float(v.mean()) if n else np.nan
+            row[f"{m}_std"] = float(v.std(ddof=1)) if n > 1 else np.nan
+            row[f"{m}_n"] = n
+            row[f"{m}_ci95"] = float(stats.t.ppf(0.975, n - 1) * v.std(ddof=1) / np.sqrt(n)) if n > 1 else np.nan
+        rows.append(row)
+    return pd.DataFrame(rows)

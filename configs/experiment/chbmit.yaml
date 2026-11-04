@@ -5,14 +5,15 @@ defaults:
 model:
   hidden: 64
 train:
-  epochs: 15
-  patience: 4
+  epochs: 8
+  patience: 3
   seq_stride: 8
-  max_batches: 400
+  max_batches: 200
 eval:
   n_folds: null
   threshold_pct: 99.5
-  variants: [full, static_graph, no_graph, no_transformer, supervised_head, channel_cnn_lstm]
+  adaptive_norm: 600      # causal per-recording normalisation over the last 10 minutes (DECISIONS D12)
+  variants: [full, static_graph, no_graph, supervised_head, channel_cnn_lstm]
   baseline_methods: [pearson, granger]
   baseline_every: 2
 device: auto

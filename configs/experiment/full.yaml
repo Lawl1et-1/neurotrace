@@ -1,8 +1,10 @@
 # @package _global_
-# Full synthetic run on GPU.
+# Full synthetic study on GPU: 20 subjects, 5-fold leave-subjects-out (4 test subjects per fold).
 data:
-  n_subjects: 12
-  duration_s: 300
+  n_subjects: 20
+  duration_s: 240
 train:
   epochs: 40
+eval:
+  n_folds: 5
 device: auto

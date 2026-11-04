@@ -116,7 +116,7 @@ def main(cfg: DictConfig) -> None:
     train_s, val_s, test_s = split
     print(f"model {ck.name}: test subjects {test_s}")
     cal = ScoreCalibration.fit([run_recording(model, r, device) for r in by_subject(recs, val_s)],
-                               lambda_graph=mcfg.train.lambda_graph)
+                               lambda_graph=mcfg.train.lambda_graph, adaptive=int(cfg.eval.get("adaptive_norm", 0)))
     normal = np.concatenate([cal.score(run_recording(model, r, device))[~r.labels] for r in by_subject(recs, val_s)])
     thr = float(np.percentile(normal, cfg.eval.threshold_pct))
 

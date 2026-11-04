@@ -66,20 +66,49 @@ def delta_graph(adj: np.ndarray, start: int, end: int, baseline_s: int = 60, str
     return adj[start:end].astype(np.float32).mean(axis=0) - base.astype(np.float32)
 
 
+def power_deviation(bands: np.ndarray, start: int, end: int, baseline_s: int = 60, stride_s: float = 1.0) -> np.ndarray:
+    """Per-channel robust z of mean log band power during [start, end) vs the preceding minute."""
+    p = bands.mean(axis=-1)
+    nb = max(5, int(baseline_s / stride_s))
+    base = p[max(0, start - nb) : max(1, start - 5)]
+    iqr = np.subtract(*np.percentile(base, [75, 25], axis=0)) + 1e-6
+    return (p[start:end].mean(axis=0) - np.median(base, axis=0)) / iqr
+
+
+def choose_seed(inc: np.ndarray, rule: str = "hybrid", power_z: np.ndarray | None = None) -> int:
+    """Pick the channel a path starts from.
+
+    * ``net``: largest (outgoing - incoming) increase. Works for unbounded estimates such as the
+      Granger Wald statistic, whose increase scales with coupling strength, so the seed's strong new
+      outgoing edges dominate.
+    * ``hybrid`` (default): band-power deviation x (normalised outgoing increase + 0.2). The learned
+      gates are bounded sigmoids: every new coupling just switches "on", so outgoing *counts* rather
+      than strengths decide ``net`` and it favours nodes with many children. The seed is also where
+      power rises most, which the band-power factor adds back (D14).
+    """
+    out, inn = inc.sum(axis=1), inc.sum(axis=0)
+    if rule == "hybrid" and power_z is not None:
+        return int(np.argmax(power_z * (out / (out.max() + 1e-12) + 0.2)))
+    return int(np.argmax(out - inn))
+
+
 def graph_path(adj: np.ndarray, start: int, end: int, times: np.ndarray, ch_names: list[str],
                baseline_s: int = 60, stride_s: float = 1.0, max_steps: int | None = None,
-               min_rel: float = 0.25) -> tuple[list[PathStep], np.ndarray]:
+               min_rel: float = 0.25, seed_rule: str = "net",
+               bands: np.ndarray | None = None) -> tuple[list[PathStep], np.ndarray]:
     """Greedy best-first traversal of the increased edges of the event graph (see module doc).
 
     Works with any (N, C, C) directed adjacency sequence: the learned graph or a classical
     estimate such as per-window Granger. Edges below ``min_rel`` x the largest increase are ignored.
+    The start channel comes from :func:`choose_seed` (``hybrid`` needs ``bands``).
     """
     d = delta_graph(adj, start, end, baseline_s, stride_s)
     inc = np.clip(d, 0, None)
     np.fill_diagonal(inc, 0)
     c = len(ch_names)
     min_delta = min_rel * float(inc.max()) if inc.max() > 0 else np.inf
-    seed = int(np.argmax(inc.sum(axis=1) - inc.sum(axis=0)))
+    pz = power_deviation(bands, start, end, baseline_s, stride_s) if bands is not None else None
+    seed = choose_seed(inc, seed_rule if pz is not None else "net", pz)
     # first-crossing time of each channel's incoming increase (and outgoing for the seed)
     nb = max(1, int(baseline_s / stride_s))
     base = adj[max(0, start - nb) : start].astype(np.float32).mean(axis=0) if start > 0 else adj[0].astype(np.float32)
@@ -133,7 +162,8 @@ def explain_event(adj: np.ndarray | None, bands: np.ndarray, score: np.ndarray, 
     """Bundle graph path, signal path and top changed edges for one detected event."""
     ex = EventExplanation(start, end, float(times[start]), float(np.nanmax(score[start:end])))
     if adj is not None:
-        ex.graph_path, d = graph_path(adj, start, end, times, ch_names, stride_s=stride_s)
+        ex.graph_path, d = graph_path(adj, start, end, times, ch_names, stride_s=stride_s,
+                                      seed_rule="hybrid", bands=bands)
         ex.delta_adj = d
         flat = np.argsort(d, axis=None)[::-1][:n_top]
         ex.top_edges = [(int(i // d.shape[1]), int(i % d.shape[1]), float(d.flat[i])) for i in flat]

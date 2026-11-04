@@ -53,6 +53,10 @@ def load_synthetic(cfg, seed: int = 0) -> list[WindowedRecording]:
         event_edges=cfg.event_edges,
         mixing=cfg.mixing,
         noise_std=cfg.noise_std,
+        seed_drive=cfg.get("seed_drive", 2.0),
+        seed_radius=cfg.get("seed_radius", 0.90),
+        event_coupling=tuple(cfg.get("event_coupling", (0.3, 0.5))),
+        rhythm_change=cfg.get("rhythm_change", 1.0),
     )
     bands = {k: tuple(v) for k, v in cfg.bands.items()}
     return [window_synthetic(r, cfg.window_s, cfg.stride_s, bands) for r in cohort]
