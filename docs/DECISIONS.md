@@ -65,3 +65,18 @@ Each entry: **decision**, **why**, **consequence / limit**.
 ## D15. Harder synthetic benchmark (v2)
 - **Decision:** 20 subjects (5 folds), weaker seed drive (×1.2), weaker event couplings (0.25–0.4), more volume conduction (0.25) and only a quarter of events retune the seed to a slow rhythm.
 - **Why:** in v1 a band-power deviation score reached 0.98 window AUROC: events were detectable from spectra alone and could not separate methods. On a 3-subject probe, v2-like settings bring band power to ≈ 0.82–0.92 and Granger deviation to ≈ 0.80–0.83, while Granger edge recovery stays ≈ 0.95.
+
+## D16. Patients, not folders; baselines calibrated on another patient
+- **Decision:** chb21 is the same patient as chb01 recorded 1.5 years later, so its recordings carry the subject id chb01 and are held out together. Classical-baseline thresholds come from the pooled normal windows of the next *patient*, never from another file of the test patient (before this fix the reference was the next file in the list, usually the same patient's).
+- **Why:** both are test-patient leaks, small but real.
+
+## D17. Shared-electrode edges in bipolar montages
+- **Finding:** in the CHB-MIT double banana, 17 pairs of derivations share an electrode (13 chain neighbours such as FP1-F7 / F7-T7, plus the FP1, FP2, O1 and O2 junctions; 34 directed edges). The shared electrode enters both signals, so these pairs are coupled by construction.
+- **Decision:** such edges are excluded from propagation paths, the top-edge list and the drawn map; each event reports the share of its graph increase that sat on them. The model and the anomaly score still see every edge (removing them would change what is being evaluated). A **hub flag** is raised when one channel takes part in more than 25 % of an event's (kept) graph increase, against ≈ 6 % for an even spread over 18 channels: one dominant channel more often means an electrode problem, an artefact or a reference effect than spread.
+
+## D18. Integrated Gradients must converge
+- **Finding:** on CHB-MIT the IG convergence error was ≈ 0.11 (60 % of F(x) − F(baseline)) and did not shrink from 32 to 1024 steps, so the old attributions were incomplete. Two causes: (1) gradients did not reach the input through the learned graph (`detach_graph` in training, `no_grad` around the VAR evidence); (2) the GAT keeps each node's top-k incoming edges, a step function of the input whose jumps gradients cannot see. Autograd matched finite differences everywhere along the path, while F jumped between points.
+- **Decision:** during attribution only, gradients flow through the graph and the GAT's edge choice is frozen at the explained input (F(x) is unchanged). Steps double from 32 up to 1024 until the absolute convergence error is below 1e-2; the step count and error are exported, and an unconverged attribution is labelled as such. The attribution explains the model with the edge selection of the explained window.
+
+## D19. Operating points, paired tests, combined detectors
+- **Decision:** besides the calibrated threshold (99.5th percentile of a validation patient's normal scores), every detector is also read at matched false-alarm budgets of 0.5, 1 and 2 per hour, with the threshold set on each test patient's own scores (an oracle operating point: it makes detectors comparable, not deployable). Detector pairs are compared with two-sided paired Wilcoxon signed-rank tests over patients on per-patient AUROC and AUPRC. Two combined detectors add equal-weight causal robust z-scores without tuning: band power + the learned-graph change, and band power + Granger change.
