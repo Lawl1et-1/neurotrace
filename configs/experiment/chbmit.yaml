@@ -1,0 +1,18 @@
+# @package _global_
+# CHB-MIT: leave-one-subject-out over the downloaded subjects, GPU.
+defaults:
+  - override /data: chbmit
+model:
+  hidden: 64
+train:
+  epochs: 15
+  patience: 4
+  seq_stride: 8
+  max_batches: 400
+eval:
+  n_folds: null
+  threshold_pct: 99.5
+  variants: [full, static_graph, no_graph, no_transformer, supervised_head, channel_cnn_lstm]
+  baseline_methods: [pearson, granger]
+  baseline_every: 2
+device: auto

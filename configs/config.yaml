@@ -16,3 +16,11 @@ hydra:
     dir: outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}-${run_name}
   job:
     chdir: false
+
+eval:
+  n_folds: 4                 # leave-subjects-out folds (null = leave-one-subject-out)
+  val_subjects: 1            # per fold, taken from the training pool (early stopping + calibration)
+  threshold_pct: 99.0        # alarm threshold = this percentile of normal validation scores
+  variants: [full, diffusion_gnn, static_graph, no_graph, no_transformer, no_var_evidence, masked_objective, supervised_head, channel_cnn_lstm]
+  baseline_methods: [pearson, coherence, granger, pdc, dtf]
+  baseline_every: 1          # compute classical connectivity on every k-th window
