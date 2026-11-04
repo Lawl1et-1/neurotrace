@@ -247,6 +247,16 @@ export function Results({ index }: { index: Index }) {
             {chbBest ? fci(chbBest, "auroc") : "—"}. Seizures are rare, which is why AUPRC and false alarms per hour matter more
             than AUROC.
           </p>
+          <p>
+            The simplest detector wins. Band-power deviation reaches the best window AUROC and AUPRC of the label-free
+            detectors and catches the most seizures, at about four false alarms per hour. The full model is the quietest
+            ({val(chb, "full", "fa_per_hour")} false alarms per hour) and misses most seizures at its threshold
+            ({val(chb, "full", "sensitivity")}). The learned graph does carry signal: the same model with no graph or with the
+            distance graph alone drops to {val(chb, "no_graph", "auroc")} and {val(chb, "static_graph", "auroc")}, mostly
+            because of two patients. The supervised head ({val(chb, "supervised_head", "auroc")}) is trained on the other patients'
+            seizure labels and is an upper reference, not a fair competitor. The recordings in the explorer belong to the
+            first held-out patient (chb05), scored by the model that never saw that patient.
+          </p>
           <Bars rows={chb} metric="auroc" title="Seizure detection, CHB-MIT (window AUROC)" note="Each patient held out once. Whiskers are 95 % confidence intervals over patients; with this few patients they are wide." />
           <Table rows={chb} synthetic={false} />
         </>

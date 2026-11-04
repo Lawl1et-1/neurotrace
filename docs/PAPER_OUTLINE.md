@@ -36,7 +36,10 @@
 ## 5. Results (to be written from the CSVs)
 - Synthetic (v2, 20 subjects, 5 folds): edge AUROC of the learned graph vs per-window estimators; event-edge AUROC; path agreement under both seed rules; window and event metrics with 95 % CIs.
 - CHB-MIT (6 subjects, leave-one-subject-out): window AUROC/AUPRC, sensitivity, latency, false alarms/h with per-patient adaptive normalisation; compared with band-power and connectivity-deviation baselines.
-- No numbers are stated here until `results/*/summary.csv` exist.
+- Headline numbers (mean ± 95 % CI over test subjects; full tables in README):
+  - Synthetic (n = 20): learned edge AUROC 0.930 ± 0.021 vs Granger 0.968 ± 0.011; detection AUROC 0.909 ± 0.027 (full) vs 0.833 (no graph) vs 0.935 ± 0.021 (band-power deviation); seed hit 0.32 vs 0.48 (Granger).
+  - CHB-MIT (n = 6): detection AUROC 0.840 ± 0.172 (full) vs 0.721 (no graph) vs 0.944 ± 0.074 (band-power deviation); supervised head 0.970 ± 0.021; full model 1.0 FA/h at sensitivity 0.18.
+- Message: the learned graph is close to Granger on ground truth and improves the model over a no-graph ablation on both datasets, but a band-power deviation score is at least as good for detection; the contribution is the interpretable, checked graph, not a better detector.
 
 ## 6. Limitations
 - Electrodes/bipolar derivations ≠ regions; edges ≠ causes.
