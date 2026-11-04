@@ -90,14 +90,53 @@ attention. Synthetic recordings overlay the injected ground truth. Every state h
 
 ## Results
 
-**Being regenerated.** An audit of the first evaluation found two flaws, now fixed (see
-`docs/DECISIONS.md`, D13): the connectivity anomaly score used window-to-window change, which is
-dominated by estimation noise, and event matching admitted alarms up to 15 s before onset, which
-produced negative latencies. The synthetic benchmark was also too easy (a band-power baseline reached
-0.98 window AUROC), so it was made harder (D15). The full synthetic study and the CHB-MIT
-leave-one-subject-out run are being re-run; tables will be added here from `results/*/summary.csv`
-(mean ± sd, 95 % CI and number of test subjects per metric) once they exist. No CHB-MIT result is
-claimed before then.
+All numbers are means over held-out test subjects ± the half-width of the 95 % t-interval, with n the
+number of test subjects; event counts and hours are pooled within a subject first. Regenerate any table
+with `python scripts/results_table.py <dataset>`. An earlier version of this evaluation had two flaws
+(window-to-window connectivity change as an anomaly score, and early alarms counted as detections) and
+an easy benchmark; both are fixed, see `docs/DECISIONS.md` D13–D15.
+
+### Synthetic ground truth (v2: 20 subjects, 5-fold leave-subjects-out)
+
+| Model | n | Window AUROC | AUPRC | Sensitivity | FA / h | Latency (s) | Edge AUROC | Event-edge AUROC | Path seed hit |
+|---|---|---|---|---|---|---|---|---|---|
+| NEUROTRACE (learned graph + GAT + Transformer) | 20 | 0.909 ± 0.027 | 0.714 ± 0.051 | 0.17 ± 0.09 | 0.0 ± 0.0 | 2.6 ± 2.5 | 0.930 ± 0.021 | 0.854 ± 0.033 | 0.32 ± 0.12 |
+| – diffusion GNN instead of GAT | 20 | 0.907 ± 0.029 | 0.711 ± 0.053 | 0.17 ± 0.09 | 0.0 ± 0.0 | 2.0 ± 1.6 | 0.933 ± 0.016 | 0.864 ± 0.034 | 0.37 ± 0.13 |
+| – distance-prior graph only | 20 | 0.838 ± 0.066 | 0.646 ± 0.093 | 0.15 ± 0.09 | 0.0 ± 0.0 | 1.6 ± 1.1 | — | — | — |
+| – no graph | 20 | 0.833 ± 0.064 | 0.631 ± 0.092 | 0.15 ± 0.09 | 0.0 ± 0.0 | 1.6 ± 1.1 | — | — | — |
+| – no Transformer | 20 | 0.901 ± 0.029 | 0.699 ± 0.051 | 0.13 ± 0.08 | 0.0 ± 0.0 | 1.8 ± 2.9 | 0.926 ± 0.022 | 0.853 ± 0.036 | 0.27 ± 0.11 |
+| – edge module without VAR evidence | 20 | 0.920 ± 0.023 | 0.747 ± 0.042 | 0.13 ± 0.09 | 0.0 ± 0.0 | 1.5 ± 1.7 | 0.829 ± 0.033 | 0.847 ± 0.038 | 0.40 ± 0.16 |
+| – masked-window objective | 20 | 0.888 ± 0.039 | 0.683 ± 0.061 | 0.15 ± 0.09 | 0.0 ± 0.0 | 1.3 ± 1.1 | 0.917 ± 0.024 | 0.838 ± 0.033 | 0.28 ± 0.09 |
+| – + supervised head (uses labels) | 20 | 0.894 ± 0.040 | 0.740 ± 0.053 | 0.75 ± 0.11 | 8.0 ± 8.3 | 3.6 ± 0.5 | 0.894 ± 0.034 | 0.798 ± 0.060 | 0.25 ± 0.14 |
+| Per-channel CNN-LSTM | 20 | 0.873 ± 0.040 | 0.655 ± 0.070 | 0.15 ± 0.09 | 0.0 ± 0.0 | 1.2 ± 0.8 | — | — | — |
+| Band-power deviation | 20 | 0.935 ± 0.021 | 0.792 ± 0.035 | 0.45 ± 0.15 | 1.8 ± 3.7 | 1.7 ± 0.7 | — | — | — |
+| Pearson deviation | 20 | 0.825 ± 0.033 | 0.589 ± 0.054 | 0.45 ± 0.16 | 8.0 ± 7.8 | 3.1 ± 1.2 | 0.717 ± 0.022 | 0.605 ± 0.038 | 0.08 ± 0.07 |
+| Coherence deviation | 20 | 0.814 ± 0.049 | 0.618 ± 0.057 | 0.47 ± 0.17 | 6.2 ± 5.6 | 2.9 ± 1.3 | 0.927 ± 0.011 | 0.812 ± 0.036 | 0.08 ± 0.07 |
+| Granger (per window) | 20 | 0.789 ± 0.046 | 0.537 ± 0.062 | 0.33 ± 0.15 | 9.8 ± 6.9 | 2.6 ± 1.1 | 0.968 ± 0.011 | 0.868 ± 0.037 | 0.48 ± 0.15 |
+| PDC (per window) | 20 | 0.751 ± 0.058 | 0.456 ± 0.076 | 0.28 ± 0.15 | 11.5 ± 5.6 | 2.5 ± 1.8 | 0.926 ± 0.017 | 0.832 ± 0.046 | 0.23 ± 0.13 |
+| DTF (per window) | 20 | 0.746 ± 0.051 | 0.462 ± 0.082 | 0.32 ± 0.14 | 8.0 ± 5.7 | 3.2 ± 1.2 | 0.921 ± 0.014 | 0.815 ± 0.040 | 0.37 ± 0.13 |
+
+What this says:
+- **Edge recovery.** The learned per-window graph recovers the injected directed couplings with an edge
+  AUROC of 0.93 ± 0.02; per-window conditional Granger causality, the natural estimator for a linear
+  autoregressive world, does better (0.97 ± 0.01). Without the conditional VAR evidence the edge module
+  falls to 0.83.
+- **Detection.** The graph matters for this model: 0.91 ± 0.03 window AUROC with the learned graph vs
+  0.83–0.84 with no graph or only the distance prior. A simple band-power deviation score is still at
+  least as good (0.94 ± 0.02; the intervals overlap). Connectivity-deviation baselines reach 0.75–0.83.
+- **Event metrics are per-detector operating points.** Thresholds are the 99th percentile of each
+  detector's scores on a held-out subject's normal windows: the self-supervised models end up with no
+  false alarms and low sensitivity (≈ 0.15), the connectivity baselines with higher sensitivity at
+  6–12 false alarms per hour. Each test subject has only 4 minutes of data, so false-alarm rates are
+  rough. Compare AUROC/AUPRC across rows, and sensitivity only together with its false-alarm rate.
+- **Propagation paths.** Starting from the channel whose outgoing dependencies grew most, the learned
+  graph finds the true seed in 0.32 ± 0.12 of events, Granger in 0.48 ± 0.15. The learned gates are
+  bounded, so strong and weak new couplings look alike (D14). A rule that also weighed band-power rise
+  looked better on the first benchmark and did not hold up on this one; it is kept in the CSVs, not used.
+
+### CHB-MIT (6 subjects, leave-one-subject-out)
+
+Running. No CHB-MIT result is claimed until `results/chbmit/summary.csv` exists.
 
 ## Limitations
 

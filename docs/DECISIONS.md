@@ -59,7 +59,8 @@ Each entry: **decision**, **why**, **consequence / limit**.
 
 ## D14. Seed rule for propagation paths
 - **Finding:** on v1 synthetic data the learned-graph path found the true seed in 25 % of events vs 89 % for Granger. Diagnosis: the Granger Wald statistic grows with coupling strength (change on the seed's out-edges ≈ 228 vs ≈ 99 on other event edges vs ≈ 0.3 on non-edges), so "largest net outgoing increase" finds the seed; the learned gates are bounded sigmoids (0.015 vs 0.012 vs −0.003), so every new coupling is just "on" and the rule picks nodes with many children. Seeding from the earliest window where the score rises did not help (19 %): the score rises in the first event window (median lag 0.5 windows) and all event edges switch on within one 1 s window, while true delays are 15–40 ms.
-- **Decision:** paths start from `hybrid` = band-power deviation × (normalised outgoing increase + 0.2) (53 % on v1 data, chosen on those test folds, so its first out-of-sample check is the v2 rerun); `net` is still reported for every estimator.
+- **Tried:** `hybrid` = band-power deviation × (normalised outgoing increase + 0.2) reached 53 % on v1, but it was chosen on those same test folds. On the v2 benchmark it did not hold up: 0.22 vs 0.32 for `net` (learned graph) and 0.28 vs 0.48 (Granger).
+- **Decision:** paths start from `net` (largest net outgoing increase). `hybrid` stays in the CSVs (`path_*_hybrid`) as a documented negative result. The learned graph's seed identification is a known weakness; a fix would need edge magnitudes that scale with coupling strength (for example the gate times the norm of its lag filter) rather than a bounded gate alone.
 
 ## D15. Harder synthetic benchmark (v2)
 - **Decision:** 20 subjects (5 folds), weaker seed drive (×1.2), weaker event couplings (0.25–0.4), more volume conduction (0.25) and only a quarter of events retune the seed to a slow rhythm.

@@ -16,7 +16,7 @@ function readHash() {
 
 export default function Explorer({ index }: { index: Index }) {
   const initial = useRef(readHash());
-  const defaultSeg = index.segments.find((s) => s.id === initial.current.seg)?.id ?? index.segments.find((s) => s.dataset === "synthetic")?.id ?? index.segments[0]?.id;
+  const defaultSeg = index.segments.find((s) => s.id === initial.current.seg)?.id ?? [...index.segments].sort((a, b) => b.n_detected - a.n_detected || (a.dataset === "synthetic" ? -1 : 1))[0]?.id;
   const [segId, setSegId] = useState<string>(defaultSeg);
   const [seg, setSeg] = useState<Segment | null>(null);
   const [error, setError] = useState<string | null>(null);

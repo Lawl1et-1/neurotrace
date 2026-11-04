@@ -75,16 +75,17 @@ def power_deviation(bands: np.ndarray, start: int, end: int, baseline_s: int = 6
     return (p[start:end].mean(axis=0) - np.median(base, axis=0)) / iqr
 
 
-def choose_seed(inc: np.ndarray, rule: str = "hybrid", power_z: np.ndarray | None = None) -> int:
+def choose_seed(inc: np.ndarray, rule: str = "net", power_z: np.ndarray | None = None) -> int:
     """Pick the channel a path starts from.
 
     * ``net``: largest (outgoing - incoming) increase. Works for unbounded estimates such as the
       Granger Wald statistic, whose increase scales with coupling strength, so the seed's strong new
       outgoing edges dominate.
-    * ``hybrid`` (default): band-power deviation x (normalised outgoing increase + 0.2). The learned
+    * ``hybrid``: band-power deviation x (normalised outgoing increase + 0.2). The learned
       gates are bounded sigmoids: every new coupling just switches "on", so outgoing *counts* rather
       than strengths decide ``net`` and it favours nodes with many children. The seed is also where
-      power rises most, which the band-power factor adds back (D14).
+      power rises most, which the band-power factor adds back. Chosen on v1 data, it did not hold up
+      on the harder v2 benchmark (seed hit 0.22 vs 0.32 for ``net``), so ``net`` is the default (D14).
     """
     out, inn = inc.sum(axis=1), inc.sum(axis=0)
     if rule == "hybrid" and power_z is not None:
@@ -162,8 +163,7 @@ def explain_event(adj: np.ndarray | None, bands: np.ndarray, score: np.ndarray, 
     """Bundle graph path, signal path and top changed edges for one detected event."""
     ex = EventExplanation(start, end, float(times[start]), float(np.nanmax(score[start:end])))
     if adj is not None:
-        ex.graph_path, d = graph_path(adj, start, end, times, ch_names, stride_s=stride_s,
-                                      seed_rule="hybrid", bands=bands)
+        ex.graph_path, d = graph_path(adj, start, end, times, ch_names, stride_s=stride_s, seed_rule="net")
         ex.delta_adj = d
         flat = np.argsort(d, axis=None)[::-1][:n_top]
         ex.top_edges = [(int(i // d.shape[1]), int(i % d.shape[1]), float(d.flat[i])) for i in flat]

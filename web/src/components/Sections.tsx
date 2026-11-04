@@ -219,6 +219,20 @@ export function Results({ index }: { index: Index }) {
           <Bars rows={syn} metric="edge_auroc" title="Edge recovery, synthetic (AUROC over all directed pairs)" note="Per-window learned adjacency vs the couplings active in that window; Granger, PDC and DTF on the same windows. Whiskers: 95 % CI over test subjects." />
           <Bars rows={syn} metric="auroc" title="Event detection, synthetic (window AUROC)" note="Self-supervised variants never see labels; the supervised head does, and is an upper reference rather than a fair competitor." />
           <Table rows={syn} synthetic />
+          <h3>Reading the event columns and the paths</h3>
+          <p>
+            The event metrics are not one operating point. Each detector's threshold is the 99th percentile of its own scores
+            on a held-out subject's normal windows: the self-supervised models end up quiet ({val(syn, "full", "fa_per_hour")} false
+            alarms per hour) and catch few events ({val(syn, "full", "sensitivity")}), while the connectivity baselines catch more at
+            several false alarms per hour. Compare AUROC and AUPRC across rows; compare sensitivity only together with its false-alarm rate.
+          </p>
+          <p>
+            Propagation paths start from the channel whose outgoing dependencies grew most. From the learned graph that channel is
+            the true seed in {val(syn, "full", "path_seed_hit")} of events; from Granger in {val(syn, "baseline_granger", "path_seed_hit")}.
+            The learned edges are bounded gates, so a strong new coupling and a weak one look alike, and the start rule loses the
+            seed. A rule that also weighed band-power rise looked better on the first, easier benchmark and did not hold up here
+            ({val(syn, "full", "path_seed_hit_hybrid")}); it is reported in the CSV and not used.
+          </p>
         </>
       ) : (
         <p className="empty">The synthetic study is being re-run after an evaluation audit; this section fills in from results/synthetic/summary.csv.</p>

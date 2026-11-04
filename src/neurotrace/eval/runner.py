@@ -111,7 +111,7 @@ def synthetic_extras(rec: WindowedRecording, adj: np.ndarray | None) -> dict:
             steps, _ = graph_path(a, lo, hi, rec.times, rec.ch_names, stride_s=rec.stride_s,
                                   max_steps=len(ev.order), seed_rule=rule, bands=rec.bands)
             pa = path_agreement([s.channel for s in steps], ev.order)
-            sfx = "" if rule == "hybrid" else "_net"
+            sfx = "" if rule == "net" else "_hybrid"
             for k, v in pa.items():
                 agg.setdefault(f"path_{k}{sfx}", []).append(v)
     if ev_auc:
@@ -215,7 +215,7 @@ def classical_baselines(cfg: DictConfig, recs: list[WindowedRecording], methods:
 
 METRICS = ["auroc", "auprc", "sensitivity", "median_latency_s", "fa_per_hour", "edge_auroc",
            "event_edge_auroc", "path_seed_hit", "path_recall", "path_kendall",
-           "path_seed_hit_net", "path_recall_net", "path_kendall_net"]
+           "path_seed_hit_hybrid", "path_recall_hybrid", "path_kendall_hybrid"]
 
 
 def summarise(df: pd.DataFrame) -> pd.DataFrame:
