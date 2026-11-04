@@ -13,7 +13,7 @@ eval:
   n_folds: null
   threshold_pct: 99.5
   adaptive_norm: 600      # causal per-recording normalisation over the last 10 minutes (DECISIONS D12)
-  variants: [full, static_graph, no_graph, supervised_head, channel_cnn_lstm]
-  baseline_methods: [pearson, granger]
-  baseline_every: 2
+  variants: [full, diffusion_gnn, static_graph, no_graph, no_transformer, no_var_evidence, masked_objective, supervised_head, channel_cnn_lstm]
+  baseline_methods: [pearson, coherence, granger, pdc, dtf]
+  baseline_every: 1
 device: auto
