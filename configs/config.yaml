@@ -1,0 +1,18 @@
+# Root Hydra config. Compose with e.g. `python scripts/train.py experiment=smoke model.graph=static`.
+defaults:
+  - data: synthetic
+  - model: neurotrace
+  - train: default
+  - _self_
+  - optional experiment: null
+
+seed: 0
+device: auto          # auto | cpu | cuda
+run_name: ${data.name}-${model.graph}-${model.temporal}
+out_dir: results/runs/${run_name}
+
+hydra:
+  run:
+    dir: outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}-${run_name}
+  job:
+    chdir: false

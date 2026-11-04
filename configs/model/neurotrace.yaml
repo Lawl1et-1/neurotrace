@@ -1,0 +1,19 @@
+# Swappable modules for ablations:
+#   graph:    none | static | learned
+#   spatial:  gat | diffusion
+#   temporal: transformer | none
+name: neurotrace
+graph: learned
+spatial: gat
+temporal: transformer
+input: raw              # raw | bands | both
+hidden: 64
+gnn_layers: 2
+heads: 4
+tf_layers: 2
+tf_heads: 4
+dropout: 0.1
+seq_len: 8              # number of consecutive windows seen by the transformer
+causal: true
+prior_sigma: 0.5        # width (head radii) of the distance prior kernel
+prior_mix: 0.5          # A = mix * prior + (1 - mix) * learned

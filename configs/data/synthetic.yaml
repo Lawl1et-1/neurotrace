@@ -1,0 +1,17 @@
+# Synthetic EEG with known directed couplings (ground truth for edge recovery).
+name: synthetic
+montage: standard_1020
+channels: [Fp1, Fp2, F7, F3, Fz, F4, F8, T7, C3, Cz, C4, T8, P7, P3, Pz, P4, P8, O1, O2]
+sfreq: 128
+n_subjects: 8
+duration_s: 240
+n_events: 3            # injected coupling-change events per subject
+event_duration_s: 12
+n_edges: 12            # number of directed couplings in the baseline network
+event_edges: 6         # number of new directed couplings switched on during an event
+mixing: 0.15           # strength of simulated volume conduction (0 = none)
+noise_std: 1.0
+window_s: 2.0
+stride_s: 1.0
+bands: {delta: [1, 4], theta: [4, 8], alpha: [8, 13], beta: [13, 30], gamma: [30, 50]}
+cache_dir: data/processed/synthetic

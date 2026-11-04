@@ -1,0 +1,15 @@
+# @package _global_
+# Tiny CPU config for tests and CI-sized runs (a minute or two on a laptop).
+data:
+  n_subjects: 4
+  duration_s: 90
+  n_events: 2
+model:
+  hidden: 32
+  gnn_layers: 1
+  tf_layers: 1
+  seq_len: 6
+train:
+  epochs: 3
+  batch_size: 16
+device: cpu

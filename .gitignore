@@ -1,0 +1,25 @@
+.venv/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+outputs/
+multirun/
+lightning_logs/
+runs/
+
+# raw and processed EEG are downloaded, never committed
+data/raw/
+data/processed/
+data/cache/
+
+# heavy training artefacts (small result CSVs/figures are committed)
+checkpoints/
+*.pt
+!results/models/*.pt
+
+web/node_modules/
+web/dist/
+site/node_modules/
+site/dist/
+.env

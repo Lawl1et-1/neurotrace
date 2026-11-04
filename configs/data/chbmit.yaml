@@ -1,0 +1,14 @@
+# CHB-MIT Scalp EEG (PhysioNet). Bipolar double-banana montage, 256 Hz, seizure annotations.
+name: chbmit
+montage: bipolar_1020
+raw_dir: data/raw/chbmit
+cache_dir: data/processed/chbmit
+subjects: [chb01, chb02, chb03, chb05, chb08, chb10]
+max_files_per_subject: null   # null = all files of the subject
+sfreq: 128
+l_freq: 0.5
+h_freq: 50.0
+notch: 60.0                   # recorded in the US
+window_s: 2.0
+stride_s: 1.0
+bands: {delta: [1, 4], theta: [4, 8], alpha: [8, 13], beta: [13, 30], gamma: [30, 50]}

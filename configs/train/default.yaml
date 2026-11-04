@@ -1,0 +1,12 @@
+objective: next         # next (predict next window) | masked (reconstruct masked windows)
+mask_ratio: 0.25
+epochs: 30
+batch_size: 32
+lr: 1.0e-3
+weight_decay: 1.0e-4
+grad_clip: 1.0
+lambda_graph: 1.0       # weight of the graph-change term in the anomaly score
+lambda_sparse: 1.0e-3   # L1 penalty on the learned adjacency
+supervised: false       # add a seizure-detection head (real data only)
+num_workers: 0
+patience: 6
