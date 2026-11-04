@@ -17,7 +17,8 @@ data/cache/
 checkpoints/
 *.pt
 !results/models/*.pt
-results/*/scores/  # per-window scores of every detector (large; rebuilt by evaluate.py)
+# per-window scores of every detector (large; rebuilt by evaluate.py)
+results/*/scores/
 
 web/node_modules/
 web/dist/

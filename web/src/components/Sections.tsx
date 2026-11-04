@@ -249,15 +249,23 @@ export function Results({ index }: { index: Index }) {
           </p>
           <p>
             The simplest detector wins. Band-power deviation reaches the best window AUROC and AUPRC of the label-free
-            detectors and catches the most seizures, at about four false alarms per hour. The full model is the quietest
-            ({val(chb, "full", "fa_per_hour")} false alarms per hour) and misses most seizures at its threshold
-            ({val(chb, "full", "sensitivity")}). The learned graph does carry signal: the same model with no graph or with the
-            distance graph alone drops to {val(chb, "no_graph", "auroc")} and {val(chb, "static_graph", "auroc")}, mostly
-            because of two patients. The other ablations (diffusion instead of GAT, no Transformer, no VAR evidence, masked
-            objective) land between {val(chb, "no_transformer", "auroc")} and {val(chb, "masked_objective", "auroc")}: on real data
-            none of those choices is measurably better. The connectivity baselines reach 0.79–0.85, Granger highest. The supervised head ({val(chb, "supervised_head", "auroc")}) is trained on the other patients'
-            seizure labels and is an upper reference, not a fair competitor. The recordings in the explorer belong to the
-            first held-out patient (chb05), scored by the model that never saw that patient.
+            detectors and beats the full model in all six patients (paired Wilcoxon p = 0.031, the smallest a two-sided test
+            can give with six). At the same budget of one false alarm per hour it catches 0.59 of seizures against 0.30 for the
+            full model. The learned graph does carry some signal: the same model with no graph or with the distance graph
+            alone drops to {val(chb, "no_graph", "auroc")} and {val(chb, "static_graph", "auroc")}, better in five of six
+            patients but not significantly (p = 0.06), and mostly because of chb01. Adding the learned-graph change to band
+            power does not help (0.92, below band power in five patients); the graph-change term on its own barely separates
+            seizures from normal windows (AUROC about 0.51).
+          </p>
+          <p>
+            Why do the ablations (diffusion instead of GAT, no Transformer, no VAR evidence, masked objective) alarm at the
+            same moments? Each has its own scores and threshold, but about three quarters of the score at alarm windows is
+            the VAR forecast error, which those ablations do not change. Their alarm windows overlap 87–97 %, so they share
+            one operating point: {val(chb, "full", "fa_per_hour")} false alarms per hour at sensitivity{" "}
+            {val(chb, "full", "sensitivity")}. The supervised head ({val(chb, "supervised_head", "auroc")}) is trained on the
+            other patients' seizure labels and is an upper reference, not a fair competitor. Per-patient results, tests and
+            matched-false-alarm tables are in the README. The recordings in the explorer belong to the first held-out patient
+            (chb05), scored by the model that never saw that patient. An all-patient run (chb01–chb24) is in progress.
           </p>
           <Bars rows={chb} metric="auroc" title="Seizure detection, CHB-MIT (window AUROC)" note="Each patient held out once. Whiskers are 95 % confidence intervals over patients; with this few patients they are wide." />
           <Table rows={chb} synthetic={false} />

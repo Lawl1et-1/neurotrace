@@ -139,43 +139,119 @@ What this says:
 Each patient is held out once (validation on another patient, the rest for training). Mean ± 95 %
 CI half-width over the 6 test patients; score components are z-scored against the same recording's
 preceding 10 minutes (D12). Every ablation and every classical baseline is run; connectivity is
-estimated on every window. Source: `results/chbmit/summary.csv`.
+estimated on every window. Thresholds are the 99.5th percentile of the validation patient's normal
+windows, for the models and (since D16) for the baselines too. The two combined detectors have no
+calibrated threshold, so only their window metrics and matched-FA operating points are given.
+Sources: `results/chbmit/summary.csv` and the analysis files written by
+`scripts/analyze_results.py` (D19).
 
 | Model | n | Window AUROC | AUPRC | Sensitivity | FA / h | Latency (s) |
 |---|---|---|---|---|---|---|
-| NEUROTRACE (learned graph + GAT + Transformer) | 6 | 0.839 ± 0.177 | 0.274 ± 0.171 | 0.18 ± 0.18 | 1.0 ± 0.7 | 14.2 ± 11.0 |
+| NEUROTRACE (learned graph + GAT + Transformer) | 6 | 0.838 ± 0.175 | 0.273 ± 0.170 | 0.18 ± 0.18 | 1.0 ± 0.7 | 14.2 ± 11.0 |
 | – diffusion GNN instead of GAT | 6 | 0.835 ± 0.184 | 0.273 ± 0.174 | 0.18 ± 0.18 | 1.0 ± 0.7 | 14.4 ± 11.0 |
-| – distance-prior graph only | 6 | 0.727 ± 0.187 | 0.156 ± 0.156 | 0.39 ± 0.36 | 3.9 ± 3.3 | 21.6 ± 22.3 |
+| – distance-prior graph only | 6 | 0.727 ± 0.187 | 0.156 ± 0.156 | 0.39 ± 0.36 | 3.9 ± 3.4 | 21.6 ± 22.3 |
 | – no graph | 6 | 0.721 ± 0.190 | 0.152 ± 0.138 | 0.39 ± 0.36 | 3.7 ± 3.3 | 22.3 ± 22.5 |
-| – no Transformer | 6 | 0.830 ± 0.176 | 0.268 ± 0.171 | 0.18 ± 0.18 | 1.0 ± 0.7 | 14.2 ± 11.0 |
-| – edge module without VAR evidence | 6 | 0.854 ± 0.156 | 0.288 ± 0.180 | 0.18 ± 0.18 | 1.0 ± 0.7 | 13.9 ± 11.4 |
-| – masked-window objective | 6 | 0.858 ± 0.169 | 0.292 ± 0.173 | 0.18 ± 0.18 | 1.0 ± 0.7 | 14.4 ± 11.0 |
-| – + supervised head (uses labels) | 6 | 0.981 ± 0.013 | 0.828 ± 0.136 | 0.98 ± 0.06 | 0.4 ± 0.4 | 14.4 ± 8.5 |
+| – no Transformer | 6 | 0.830 ± 0.176 | 0.267 ± 0.171 | 0.18 ± 0.18 | 1.0 ± 0.8 | 14.2 ± 11.0 |
+| – edge module without VAR evidence | 6 | 0.855 ± 0.156 | 0.288 ± 0.180 | 0.18 ± 0.18 | 1.0 ± 0.7 | 13.9 ± 11.4 |
+| – masked-window objective | 6 | 0.861 ± 0.165 | 0.292 ± 0.172 | 0.18 ± 0.18 | 1.0 ± 0.7 | 14.4 ± 11.0 |
+| – + supervised head (uses labels) | 6 | 0.977 ± 0.016 | 0.817 ± 0.113 | 0.98 ± 0.06 | 0.6 ± 0.5 | 12.2 ± 6.4 |
 | Per-channel CNN-LSTM | 6 | 0.611 ± 0.158 | 0.088 ± 0.054 | 0.38 ± 0.37 | 3.5 ± 3.2 | 22.9 ± 22.3 |
-| Band-power deviation | 6 | 0.944 ± 0.074 | 0.543 ± 0.160 | 0.70 ± 0.39 | 4.2 ± 1.6 | 12.1 ± 7.1 |
-| Pearson deviation | 6 | 0.795 ± 0.120 | 0.144 ± 0.142 | 0.48 ± 0.34 | 4.1 ± 0.9 | 14.3 ± 10.3 |
-| Coherence deviation | 6 | 0.836 ± 0.094 | 0.185 ± 0.144 | 0.30 ± 0.39 | 3.8 ± 0.9 | 23.2 ± 36.7 |
-| Granger (per window) | 6 | 0.852 ± 0.074 | 0.213 ± 0.196 | 0.49 ± 0.38 | 3.3 ± 0.6 | 11.6 ± 8.4 |
-| PDC (per window) | 6 | 0.786 ± 0.139 | 0.143 ± 0.129 | 0.27 ± 0.34 | 3.6 ± 1.0 | 13.3 ± 13.1 |
-| DTF (per window) | 6 | 0.788 ± 0.153 | 0.166 ± 0.151 | 0.27 ± 0.33 | 3.2 ± 0.7 | 12.2 ± 10.5 |
+| Band-power deviation | 6 | 0.944 ± 0.074 | 0.543 ± 0.160 | 0.59 ± 0.49 | 2.5 ± 1.6 | 13.4 ± 13.3 |
+| Pearson deviation | 6 | 0.795 ± 0.120 | 0.144 ± 0.142 | 0.40 ± 0.40 | 3.0 ± 1.4 | 16.4 ± 17.4 |
+| Coherence deviation | 6 | 0.836 ± 0.094 | 0.185 ± 0.144 | 0.30 ± 0.30 | 2.2 ± 0.8 | 21.7 ± 27.5 |
+| Granger (per window) | 6 | 0.852 ± 0.074 | 0.213 ± 0.196 | 0.42 ± 0.36 | 2.4 ± 0.9 | 18.8 ± 23.4 |
+| PDC (per window) | 6 | 0.786 ± 0.139 | 0.143 ± 0.129 | 0.25 ± 0.29 | 1.7 ± 0.8 | 10.1 ± 14.3 |
+| DTF (per window) | 6 | 0.788 ± 0.153 | 0.166 ± 0.151 | 0.25 ± 0.29 | 1.9 ± 0.8 | 9.6 ± 12.4 |
+| Band power + learned-graph change | 6 | 0.920 ± 0.105 | 0.419 ± 0.131 | — | — | — |
+| Band power + Granger change | 6 | 0.950 ± 0.053 | 0.502 ± 0.163 | — | — | — |
+
+#### Per-patient window AUROC
+
+| Patient | Full | No graph | Dist. graph | Superv. | Band power | Granger | BP + graph | BP + Granger |
+|---|---|---|---|---|---|---|---|---|
+| chb01 | 0.968 | 0.625 | 0.599 | 0.982 | 0.983 | 0.968 | 0.973 | 0.985 |
+| chb02 | 0.551 | 0.461 | 0.535 | 0.977 | 0.809 | 0.782 | 0.720 | 0.859 |
+| chb03 | 0.935 | 0.818 | 0.821 | 0.987 | 0.971 | 0.864 | 0.953 | 0.970 |
+| chb05 | 0.887 | 0.888 | 0.913 | 0.996 | 0.978 | 0.773 | 0.955 | 0.968 |
+| chb08 | 0.724 | 0.615 | 0.570 | 0.952 | 0.926 | 0.871 | 0.927 | 0.925 |
+| chb10 | 0.963 | 0.919 | 0.922 | 0.967 | 0.995 | 0.856 | 0.989 | 0.991 |
+
+#### Paired Wilcoxon signed-rank tests over patients (two-sided)
+
+| Metric | A | B | n | median A − B | A better in | p |
+|---|---|---|---|---|---|---|
+| AUROC | NEUROTRACE (learned graph + GAT + Transformer) | – no graph | 6 | +0.100 | 5/6 | 0.0625 |
+| AUROC | NEUROTRACE (learned graph + GAT + Transformer) | Band-power deviation | 6 | -0.063 | 0/6 | 0.0312 |
+| AUROC | Band power + learned-graph change | Band-power deviation | 6 | -0.014 | 1/6 | 0.0625 |
+| AUROC | Band power + learned-graph change | Band power + Granger change | 6 | -0.013 | 1/6 | 0.0625 |
+| AUROC | NEUROTRACE (learned graph + GAT + Transformer) | Granger (per window) | 6 | +0.036 | 4/6 | 1 |
+| AUPRC | NEUROTRACE (learned graph + GAT + Transformer) | – no graph | 6 | +0.058 | 5/6 | 0.219 |
+| AUPRC | NEUROTRACE (learned graph + GAT + Transformer) | Band-power deviation | 6 | -0.250 | 0/6 | 0.0312 |
+| AUPRC | Band power + learned-graph change | Band-power deviation | 6 | -0.142 | 0/6 | 0.0312 |
+| AUPRC | Band power + learned-graph change | Band power + Granger change | 6 | -0.071 | 0/6 | 0.0312 |
+| AUPRC | NEUROTRACE (learned graph + GAT + Transformer) | Granger (per window) | 6 | +0.079 | 3/6 | 0.688 |
+
+#### Sensitivity (latency, s) at matched false-alarm rates; threshold set per test patient (oracle)
+
+| Detector | ≤ 0.5 FA/h | ≤ 1 FA/h | ≤ 2 FA/h |
+|---|---|---|---|
+| NEUROTRACE (learned graph + GAT + Transformer) | 0.25 ± 0.24 (16 s) | 0.30 ± 0.28 (14 s) | 0.41 ± 0.41 (12 s) |
+| – diffusion GNN instead of GAT | 0.25 ± 0.24 (16 s) | 0.30 ± 0.28 (14 s) | 0.41 ± 0.41 (11 s) |
+| – distance-prior graph only | 0.22 ± 0.27 (23 s) | 0.24 ± 0.29 (22 s) | 0.30 ± 0.37 (18 s) |
+| – no graph | 0.15 ± 0.19 (12 s) | 0.24 ± 0.29 (23 s) | 0.27 ± 0.31 (22 s) |
+| – no Transformer | 0.25 ± 0.24 (16 s) | 0.30 ± 0.28 (14 s) | 0.41 ± 0.41 (12 s) |
+| – edge module without VAR evidence | 0.25 ± 0.24 (15 s) | 0.30 ± 0.29 (13 s) | 0.37 ± 0.38 (8 s) |
+| – masked-window objective | 0.25 ± 0.24 (16 s) | 0.32 ± 0.31 (13 s) | 0.44 ± 0.44 (10 s) |
+| – + supervised head (uses labels) | 0.98 ± 0.06 (13 s) | 0.98 ± 0.06 (9 s) | 1.00 ± 0.00 (6 s) |
+| Per-channel CNN-LSTM | 0.15 ± 0.19 (14 s) | 0.21 ± 0.24 (19 s) | 0.21 ± 0.24 (18 s) |
+| Band-power deviation | 0.27 ± 0.19 (17 s) | 0.59 ± 0.38 (13 s) | 0.73 ± 0.39 (13 s) |
+| Pearson deviation | 0.23 ± 0.31 (20 s) | 0.28 ± 0.41 (20 s) | 0.31 ± 0.43 (18 s) |
+| Coherence deviation | 0.02 ± 0.06 (9 s) | 0.19 ± 0.35 (17 s) | 0.24 ± 0.35 (15 s) |
+| Granger (per window) | 0.22 ± 0.28 (12 s) | 0.25 ± 0.33 (11 s) | 0.40 ± 0.40 (20 s) |
+| PDC (per window) | 0.05 ± 0.08 (24 s) | 0.17 ± 0.24 (15 s) | 0.26 ± 0.38 (9 s) |
+| DTF (per window) | 0.05 ± 0.08 (23 s) | 0.19 ± 0.29 (16 s) | 0.26 ± 0.36 (13 s) |
+| Band power + learned-graph change | 0.17 ± 0.17 (19 s) | 0.40 ± 0.37 (14 s) | 0.61 ± 0.39 (10 s) |
+| Band power + Granger change | 0.28 ± 0.34 (16 s) | 0.49 ± 0.34 (14 s) | 0.64 ± 0.41 (11 s) |
+
+#### Score terms: window AUROC of each term alone, and its share of the score at alarm windows
+
+| Variant | AUROC pred. error | AUROC graph change | AUROC forecast error | share pred. | share graph | share forecast |
+|---|---|---|---|---|---|---|
+| NEUROTRACE (learned graph + GAT + Transformer) | 0.702 | 0.513 | 0.844 | 0.21 | 0.03 | 0.76 |
+| – diffusion GNN instead of GAT | 0.701 | 0.509 | 0.844 | 0.22 | 0.02 | 0.76 |
+| – distance-prior graph only | 0.727 | 0.500 | 0.500 | 1.00 | 0.00 | 0.00 |
+| – no graph | 0.721 | 0.500 | 0.500 | 1.00 | 0.00 | 0.00 |
+| – no Transformer | 0.661 | 0.509 | 0.844 | 0.21 | 0.03 | 0.76 |
+| – edge module without VAR evidence | 0.706 | 0.633 | 0.845 | 0.19 | 0.03 | 0.78 |
+| – masked-window objective | 0.807 | 0.514 | 0.843 | 0.21 | 0.02 | 0.76 |
+| Per-channel CNN-LSTM | 0.611 | 0.500 | 0.500 | 1.00 | 0.00 | 0.00 |
 
 What this says:
 - **The simplest detector wins.** Band-power deviation has the best window AUROC (0.94 ± 0.07) and
-  AUPRC (0.54) of the label-free detectors and catches the most seizures (0.70), at ≈ 4 false alarms
-  per hour. The connectivity baselines reach 0.79–0.85, Granger highest.
-- **The learned graph is the part that matters.** With the learned graph the model reaches
-  0.84 ± 0.18; with no graph or the distance prior only, 0.72–0.73. The gap comes mostly from two
-  patients (chb01: 0.97 vs 0.63, chb08: 0.72 vs 0.62), and chb02 is near chance for every
-  self-supervised variant. The other ablations (diffusion instead of GAT, no Transformer, no VAR
-  evidence, masked objective) all stay within 0.83–0.86, far inside the intervals: on real data none
-  of these choices is measurably better than the others.
-- **Operating point.** Every learned-graph variant ends up at the same alarm behaviour: 1.0 false
-  alarm per hour and sensitivity 0.18. They are quiet but miss most seizures at their threshold.
-- **The supervised head** (0.98 ± 0.01, sensitivity 0.98) is trained on the other patients' seizure
+  AUPRC (0.54) of the label-free detectors. It beats the full model in all 6 patients (paired
+  Wilcoxon p = 0.031, the smallest p a two-sided test can give with 6 patients). At a matched
+  1 false alarm per hour it detects 0.59 of seizures against 0.30 for the full model.
+- **The learned graph carries signal, weakly.** With the learned graph the model reaches
+  0.84 ± 0.18; with no graph or the distance prior only, 0.72–0.73. The full model is better in
+  5 of 6 patients, but p = 0.06, and most of the gap comes from chb01 (0.97 vs 0.63).
+- **Adding the learned graph to band power does not help.** Band power + learned-graph change
+  (0.92) is below band power alone in 5 of 6 patients, and below band power + Granger change (0.95).
+  The learned-graph-change term on its own has an AUROC of about 0.51: it does not separate
+  seizures from normal windows.
+- **Why the ablations alarm alike.** Each variant has its own scores and its own threshold. Their
+  alarms agree because ~76 % of the score at alarm windows comes from the VAR forecast error,
+  which the GAT, Transformer and objective ablations leave unchanged. The prediction error
+  contributes ~21 % and the graph change ~3 %. Alarm windows overlap 87–97 % (Jaccard,
+  `alarm_overlap.csv`) between the learned-graph variants and ~21 % with the no-graph model.
+  "No VAR evidence" removes the VAR fit from the edge module's input, not the forecast-error term
+  from the score. So all learned-graph variants share one operating point: 1.0 false alarm per hour
+  at sensitivity 0.18.
+- **The supervised head** (0.98 ± 0.02, sensitivity 0.98) is trained on the other patients' seizure
   labels. It shows the representation is useful for detection; it is an upper reference, not a
   label-free competitor.
-- **Six patients.** Intervals are wide and per-patient results vary a lot; these numbers say nothing
-  about other populations, centres or the TUH corpus.
+- **Six patients.** Intervals are wide and per-patient results vary a lot. The matched-FA thresholds
+  are set on each test patient (an oracle) and only compare detectors at the same false-alarm
+  budget. The all-patient run (chb01–chb24, chb21 counted with chb01) is in progress.
 
 ## Limitations
 

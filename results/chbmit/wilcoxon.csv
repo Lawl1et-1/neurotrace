@@ -1,0 +1,11 @@
+metric,a,b,n_patients,median_diff,a_better,W,p_value
+auroc,full,no_graph,6,0.09987042582296926,5,1.0,0.0625
+auroc,full,baseline_bandpower_dev,6,-0.06319327409783565,0,0.0,0.03125
+auroc,combined_bp_graph,baseline_bandpower_dev,6,-0.014139964389222437,1,1.0,0.0625
+auroc,combined_bp_graph,combined_bp_granger,6,-0.012717523978726775,1,1.0,0.0625
+auroc,full,baseline_granger,6,0.036125216978054264,4,10.0,1.0
+auprc,full,no_graph,6,0.05785069870524784,5,4.0,0.21875
+auprc,full,baseline_bandpower_dev,6,-0.25000414319533637,0,0.0,0.03125
+auprc,combined_bp_graph,baseline_bandpower_dev,6,-0.14163527335976517,0,0.0,0.03125
+auprc,combined_bp_graph,combined_bp_granger,6,-0.07105195823510632,0,0.0,0.03125
+auprc,full,baseline_granger,6,0.07939998199078069,3,8.0,0.6875
