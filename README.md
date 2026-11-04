@@ -138,34 +138,44 @@ What this says:
 
 Each patient is held out once (validation on another patient, the rest for training). Mean ± 95 %
 CI half-width over the 6 test patients; score components are z-scored against the same recording's
-preceding 10 minutes (D12). Source: `results/chbmit/summary.csv`.
+preceding 10 minutes (D12). Every ablation and every classical baseline is run; connectivity is
+estimated on every window. Source: `results/chbmit/summary.csv`.
 
 | Model | n | Window AUROC | AUPRC | Sensitivity | FA / h | Latency (s) |
 |---|---|---|---|---|---|---|
-| NEUROTRACE (learned graph + GAT + Transformer) | 6 | 0.840 ± 0.172 | 0.273 ± 0.171 | 0.18 ± 0.18 | 1.0 ± 0.7 | 14.2 ± 11.0 |
+| NEUROTRACE (learned graph + GAT + Transformer) | 6 | 0.839 ± 0.177 | 0.274 ± 0.171 | 0.18 ± 0.18 | 1.0 ± 0.7 | 14.2 ± 11.0 |
+| – diffusion GNN instead of GAT | 6 | 0.835 ± 0.184 | 0.273 ± 0.174 | 0.18 ± 0.18 | 1.0 ± 0.7 | 14.4 ± 11.0 |
 | – distance-prior graph only | 6 | 0.727 ± 0.187 | 0.156 ± 0.156 | 0.39 ± 0.36 | 3.9 ± 3.3 | 21.6 ± 22.3 |
 | – no graph | 6 | 0.721 ± 0.190 | 0.152 ± 0.138 | 0.39 ± 0.36 | 3.7 ± 3.3 | 22.3 ± 22.5 |
-| – + supervised head (uses labels) | 6 | 0.970 ± 0.021 | 0.786 ± 0.160 | 0.90 ± 0.18 | 0.5 ± 0.7 | 14.0 ± 11.2 |
+| – no Transformer | 6 | 0.830 ± 0.176 | 0.268 ± 0.171 | 0.18 ± 0.18 | 1.0 ± 0.7 | 14.2 ± 11.0 |
+| – edge module without VAR evidence | 6 | 0.854 ± 0.156 | 0.288 ± 0.180 | 0.18 ± 0.18 | 1.0 ± 0.7 | 13.9 ± 11.4 |
+| – masked-window objective | 6 | 0.858 ± 0.169 | 0.292 ± 0.173 | 0.18 ± 0.18 | 1.0 ± 0.7 | 14.4 ± 11.0 |
+| – + supervised head (uses labels) | 6 | 0.981 ± 0.013 | 0.828 ± 0.136 | 0.98 ± 0.06 | 0.4 ± 0.4 | 14.4 ± 8.5 |
 | Per-channel CNN-LSTM | 6 | 0.611 ± 0.158 | 0.088 ± 0.054 | 0.38 ± 0.37 | 3.5 ± 3.2 | 22.9 ± 22.3 |
 | Band-power deviation | 6 | 0.944 ± 0.074 | 0.543 ± 0.160 | 0.70 ± 0.39 | 4.2 ± 1.6 | 12.1 ± 7.1 |
-| Pearson deviation | 6 | 0.819 ± 0.113 | 0.168 ± 0.154 | 0.47 ± 0.37 | 3.7 ± 1.1 | 19.0 ± 9.9 |
-| Granger (per window) | 6 | 0.853 ± 0.082 | 0.214 ± 0.197 | 0.41 ± 0.35 | 2.6 ± 0.5 | 13.3 ± 8.9 |
+| Pearson deviation | 6 | 0.795 ± 0.120 | 0.144 ± 0.142 | 0.48 ± 0.34 | 4.1 ± 0.9 | 14.3 ± 10.3 |
+| Coherence deviation | 6 | 0.836 ± 0.094 | 0.185 ± 0.144 | 0.30 ± 0.39 | 3.8 ± 0.9 | 23.2 ± 36.7 |
+| Granger (per window) | 6 | 0.852 ± 0.074 | 0.213 ± 0.196 | 0.49 ± 0.38 | 3.3 ± 0.6 | 11.6 ± 8.4 |
+| PDC (per window) | 6 | 0.786 ± 0.139 | 0.143 ± 0.129 | 0.27 ± 0.34 | 3.6 ± 1.0 | 13.3 ± 13.1 |
+| DTF (per window) | 6 | 0.788 ± 0.153 | 0.166 ± 0.151 | 0.27 ± 0.33 | 3.2 ± 0.7 | 12.2 ± 10.5 |
 
 What this says:
 - **The simplest detector wins.** Band-power deviation has the best window AUROC (0.94 ± 0.07) and
   AUPRC (0.54) of the label-free detectors and catches the most seizures (0.70), at ≈ 4 false alarms
-  per hour.
-- **The learned graph carries signal, but not enough.** The full self-supervised model reaches
-  0.84 ± 0.17 window AUROC vs 0.72–0.73 for the same model with no graph or the distance prior only;
-  the gap comes mostly from two patients (chb01: 0.97 vs 0.63, chb08: 0.72 vs 0.62), and chb02 is near
-  chance for every self-supervised variant. At its threshold it is the quietest detector (1.0 false
-  alarm per hour) and misses most seizures (sensitivity 0.18).
-- **The supervised head** (0.97 ± 0.02, sensitivity 0.90) is trained on the other patients' seizure
+  per hour. The connectivity baselines reach 0.79–0.85, Granger highest.
+- **The learned graph is the part that matters.** With the learned graph the model reaches
+  0.84 ± 0.18; with no graph or the distance prior only, 0.72–0.73. The gap comes mostly from two
+  patients (chb01: 0.97 vs 0.63, chb08: 0.72 vs 0.62), and chb02 is near chance for every
+  self-supervised variant. The other ablations (diffusion instead of GAT, no Transformer, no VAR
+  evidence, masked objective) all stay within 0.83–0.86, far inside the intervals: on real data none
+  of these choices is measurably better than the others.
+- **Operating point.** Every learned-graph variant ends up at the same alarm behaviour: 1.0 false
+  alarm per hour and sensitivity 0.18. They are quiet but miss most seizures at their threshold.
+- **The supervised head** (0.98 ± 0.01, sensitivity 0.98) is trained on the other patients' seizure
   labels. It shows the representation is useful for detection; it is an upper reference, not a
   label-free competitor.
 - **Six patients.** Intervals are wide and per-patient results vary a lot; these numbers say nothing
-  about other populations, centres or the TUH corpus. Coherence, PDC, DTF and the remaining ablations
-  were not run on CHB-MIT, to keep the run to a few GPU hours.
+  about other populations, centres or the TUH corpus.
 
 ## Limitations
 

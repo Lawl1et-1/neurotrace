@@ -38,7 +38,7 @@
 - CHB-MIT (6 subjects, leave-one-subject-out): window AUROC/AUPRC, sensitivity, latency, false alarms/h with per-patient adaptive normalisation; compared with band-power and connectivity-deviation baselines.
 - Headline numbers (mean ± 95 % CI over test subjects; full tables in README):
   - Synthetic (n = 20): learned edge AUROC 0.930 ± 0.021 vs Granger 0.968 ± 0.011; detection AUROC 0.909 ± 0.027 (full) vs 0.833 (no graph) vs 0.935 ± 0.021 (band-power deviation); seed hit 0.32 vs 0.48 (Granger).
-  - CHB-MIT (n = 6): detection AUROC 0.840 ± 0.172 (full) vs 0.721 (no graph) vs 0.944 ± 0.074 (band-power deviation); supervised head 0.970 ± 0.021; full model 1.0 FA/h at sensitivity 0.18.
+  - CHB-MIT (n = 6): detection AUROC 0.839 ± 0.177 (full) vs 0.721 (no graph) vs 0.944 ± 0.074 (band-power deviation) vs 0.852 (Granger, best connectivity baseline); other ablations 0.83–0.86; supervised head 0.981 ± 0.013; full model 1.0 FA/h at sensitivity 0.18.
 - Message: the learned graph is close to Granger on ground truth and improves the model over a no-graph ablation on both datasets, but a band-power deviation score is at least as good for detection; the contribution is the interpretable, checked graph, not a better detector.
 
 ## 6. Limitations

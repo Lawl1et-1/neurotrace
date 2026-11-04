@@ -253,7 +253,9 @@ export function Results({ index }: { index: Index }) {
             ({val(chb, "full", "fa_per_hour")} false alarms per hour) and misses most seizures at its threshold
             ({val(chb, "full", "sensitivity")}). The learned graph does carry signal: the same model with no graph or with the
             distance graph alone drops to {val(chb, "no_graph", "auroc")} and {val(chb, "static_graph", "auroc")}, mostly
-            because of two patients. The supervised head ({val(chb, "supervised_head", "auroc")}) is trained on the other patients'
+            because of two patients. The other ablations (diffusion instead of GAT, no Transformer, no VAR evidence, masked
+            objective) land between {val(chb, "no_transformer", "auroc")} and {val(chb, "masked_objective", "auroc")}: on real data
+            none of those choices is measurably better. The connectivity baselines reach 0.79–0.85, Granger highest. The supervised head ({val(chb, "supervised_head", "auroc")}) is trained on the other patients'
             seizure labels and is an upper reference, not a fair competitor. The recordings in the explorer belong to the
             first held-out patient (chb05), scored by the model that never saw that patient.
           </p>
