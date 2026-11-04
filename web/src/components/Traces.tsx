@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { Segment } from "../data";
+import type { DetectedEvent, Segment } from "../data";
 
 interface Props {
   seg: Segment;
@@ -10,19 +10,21 @@ interface Props {
   lit: Set<number>;
   onSeek: (t: number) => void;
   showTruth: boolean;
+  selected: DetectedEvent | null;
 }
 
 const css = (name: string) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 const PEN = 0.72; // pen position as a fraction of the plot width: the paper feeds right to left
 
 /** The record strip: anomaly score on top, then one trace per channel on ruled chart paper. */
-export default function Traces({ seg, t, span, hot, setHot, lit, onSeek, showTruth }: Props) {
+export default function Traces({ seg, t, span, hot, setHot, lit, onSeek, showTruth, selected }: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const [size, setSize] = useState({ w: 800, h: 320 });
   const nCh = seg.ch_names.length;
   const rows = nCh + 1.6; // score row is taller
-  const rowH = size.h / rows;
+  const top = 14; // time ticks run along the top rule
+  const rowH = (size.h - top) / rows;
 
   useEffect(() => {
     const ro = new ResizeObserver(([e]) => setSize({ w: e.contentRect.width, h: e.contentRect.height }));
@@ -63,7 +65,7 @@ export default function Traces({ seg, t, span, hot, setHot, lit, onSeek, showTru
       g.stroke();
     }
     for (let r = 0; r <= rows * 2; r++) {
-      const y = Math.round((r * rowH) / 2) + 0.5;
+      const y = Math.round(top + (r * rowH) / 2) + 0.5;
       g.strokeStyle = r % 2 === 0 ? major : minor;
       g.beginPath();
       g.moveTo(0, y);
@@ -77,38 +79,42 @@ export default function Traces({ seg, t, span, hot, setHot, lit, onSeek, showTru
       const x2 = xOf(l.end_s);
       if (x2 < 0 || x1 > w) continue;
       g.fillStyle = "rgba(47,143,106,0.07)";
-      g.fillRect(x1, rowH * 1.6, x2 - x1, h);
+      g.fillRect(x1, top + rowH * 1.6, x2 - x1, h);
       if (showTruth) {
         g.strokeStyle = green;
         g.setLineDash([6, 4]);
         g.lineWidth = 1.5;
-        g.strokeRect(x1, rowH * 1.6 + 1, x2 - x1, h - rowH * 1.6 - 2);
+        g.strokeRect(x1, top + rowH * 1.6 + 1, x2 - x1, h - top - rowH * 1.6 - 2);
         g.setLineDash([]);
       }
     }
-    // detected events: red brackets on the score row
+    // detected events: red brackets on the score row; the selected event's bracket runs down every trace
     for (const e of seg.events) {
       const x1 = xOf(e.onset_s);
       const x2 = xOf(e.end_s);
       if (x2 < 0 || x1 > w) continue;
+      const isSel = selected != null && selected.start === e.start;
+      const yEnd = isSel ? h : top + 8;
       g.strokeStyle = red;
-      g.lineWidth = 2;
+      g.lineWidth = isSel ? 2 : 1.5;
       g.beginPath();
-      g.moveTo(x1, 6);
-      g.lineTo(x1, 2);
-      g.lineTo(x2, 2);
-      g.lineTo(x2, 6);
+      g.moveTo(x1, yEnd);
+      g.lineTo(x1, top + 2);
+      g.lineTo(x2, top + 2);
+      g.lineTo(x2, yEnd);
       g.stroke();
-      g.fillStyle = "rgba(210,59,42,0.06)";
-      g.fillRect(x1, 0, x2 - x1, h);
+      g.fillStyle = isSel ? "rgba(210,59,42,0.08)" : "rgba(210,59,42,0.04)";
+      g.fillRect(x1, top, x2 - x1, h - top);
     }
 
     // anomaly score (one value per window, plotted at the window centre)
-    const sTop = 6;
-    const sH = rowH * 1.6 - 10;
-    const sMax = Math.max(seg.threshold * 1.6, ...seg.score.slice(Math.max(0, t - 200), t + 200));
-    const sMin = Math.min(0, ...seg.score.slice(Math.max(0, t - 200), t + 200));
-    const yS = (v: number) => sTop + sH * (1 - (v - sMin) / (sMax - sMin || 1));
+    const sTop = top + 5;
+    const sH = rowH * 1.6 - 9;
+    const tf = (v: number) => Math.sign(v) * Math.log1p(Math.abs(v)); // compressed: peaks can be 50x the threshold
+    const win = seg.score.slice(Math.max(0, t - 200), t + 200).map(tf);
+    const sMax = Math.max(tf(seg.threshold) * 1.8, ...win);
+    const sMin = Math.min(0, ...win);
+    const yS = (v: number) => sTop + sH * (1 - (tf(v) - sMin) / (sMax - sMin || 1));
     g.strokeStyle = blue;
     g.setLineDash([3, 3]);
     g.lineWidth = 1;
@@ -138,7 +144,7 @@ export default function Traces({ seg, t, span, hot, setHot, lit, onSeek, showTru
     const iB = Math.min(seg.traces[0].length, Math.ceil((t0 + span) * hz));
     const gain = rowH / 2 / 95;
     for (let c = 0; c < nCh; c++) {
-      const yc = rowH * 1.6 + rowH * (c + 0.5);
+      const yc = top + rowH * 1.6 + rowH * (c + 0.5);
       const tr = seg.traces[c];
       const isLit = lit.has(c);
       g.strokeStyle = isLit ? red : ink;
@@ -167,9 +173,9 @@ export default function Traces({ seg, t, span, hot, setHot, lit, onSeek, showTru
     g.font = `500 12px ${css("--f-label")}`;
     for (let s = Math.ceil(t0 / 5) * 5; s < t0 + span; s += 5) {
       const m = Math.floor(s / 60);
-      g.fillText(`${m}:${String(Math.round(s % 60)).padStart(2, "0")}`, xOf(s) + 3, h - 4);
+      g.fillText(`${m}:${String(Math.round(s % 60)).padStart(2, "0")}`, xOf(s) + 3, 11);
     }
-  }, [seg, t, span, size, hot, lit, showTruth, rowH, rows, nCh]);
+  }, [seg, t, span, size, hot, lit, showTruth, selected, rowH, rows, nCh]);
 
   const seek = (clientX: number) => {
     const r = wrap.current!.getBoundingClientRect();
@@ -185,14 +191,14 @@ export default function Traces({ seg, t, span, hot, setHot, lit, onSeek, showTru
   return (
     <div className="chart-strip">
       <div className="names" aria-hidden="false">
-        <span className="score-name" style={{ position: "absolute", right: 8, top: (rowH * 1.6) / 2, transform: "translateY(-50%)", fontFamily: "var(--f-label)" }}>
+        <span className="score-name" style={{ position: "absolute", right: 8, top: top + (rowH * 1.6) / 2, transform: "translateY(-50%)", fontFamily: "var(--f-label)" }}>
           SCORE
         </span>
         {seg.ch_names.map((n, c) => (
           <button
             key={n}
             className={hot === c || lit.has(c) ? "hot" : ""}
-            style={{ top: rowH * 1.6 + rowH * (c + 0.5) }}
+            style={{ top: top + rowH * 1.6 + rowH * (c + 0.5) }}
             onMouseEnter={() => setHot(c)}
             onMouseLeave={() => setHot(null)}
             onFocus={() => setHot(c)}
@@ -205,7 +211,7 @@ export default function Traces({ seg, t, span, hot, setHot, lit, onSeek, showTru
       <div
         className="plot"
         ref={wrap}
-        style={{ height: Math.max(270, nCh * 13 + 44) }}
+        style={{ height: Math.max(240, nCh * 11 + 46) }}
         onClick={(e) => seek(e.clientX)}
         title="Click to move the pen to this time"
       >

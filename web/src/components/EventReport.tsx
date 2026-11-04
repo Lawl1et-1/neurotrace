@@ -13,7 +13,7 @@ interface Props {
 /** Sequential single-hue ramp (paper -> ink blue) for magnitudes. */
 const ramp = (v: number) => {
   const a = [244, 247, 245];
-  const b = [31, 100, 171];
+  const b = [38, 93, 150];
   const k = Math.max(0, Math.min(1, v));
   return `rgb(${a.map((x, i) => Math.round(x + (b[i] - x) * k)).join(",")})`;
 };
@@ -82,7 +82,7 @@ export default function EventReport({ seg, index, selected, onSelect, reveal, se
       <div className="report">
         <div className="col-path">
           <h3>
-            Propagation path <span className="note">in the order the change appears</span>
+            Propagation path <span className="note">walk order, not arrival times</span>
           </h3>
           <div className="toggle" role="group" aria-label="Path estimate" style={{ marginBottom: 10 }}>
             <button aria-pressed={pathKind === "graph"} onClick={() => setPathKind("graph")}>From the learned graph</button>
@@ -94,17 +94,18 @@ export default function EventReport({ seg, index, selected, onSelect, reveal, se
                 <span className="n">{i + 1}</span>
                 <span className="ch">{names[p.ch]}</span>
                 <span className="via">{p.via != null ? `via ${names[p.via]}` : i === 0 ? "start" : ""}{truth && (truth.order.includes(p.ch) ? " · in true path" : " · not in true path")}</span>
-                <span className="t tnum">{i === 0 ? fmtTime(p.t) : `+${Math.round(p.t - path[0].t)} s`}</span>
+                <span className="t tnum">{i === 0 ? fmtTime(p.t) : ""}</span>
               </li>
             ))}
           </ol>
           {truth && (
             <p className="small" style={{ marginTop: 10 }}>
-              True order: {truth.order.map((c) => names[c]).join(" → ")}. {matched} of {truth.order.length} channels recovered. Timestamps are at
-              window resolution ({stride} s); the injected delays are 15–40 ms, so only the order is testable.
+              True order: {truth.order.map((c) => names[c]).join(" → ")}. {matched} of {truth.order.length} channels recovered. The walk starts where band power rose
+              most among the channels whose outgoing dependencies grew, then follows the edges that grew most. The injected
+              delays are 15–40 ms, far below the {stride} s window step, so only the order is testable.
             </p>
           )}
-          {!truth && <p className="small" style={{ marginTop: 10 }}>Timestamps are at window resolution ({stride} s). A path is a chain of statistical dependencies, not a measured conduction route.</p>}
+          {!truth && <p className="small" style={{ marginTop: 10 }}>The walk is ordered by dependency strength at {stride} s resolution: a chain of statistical dependencies, not a measured conduction route or arrival sequence.</p>}
         </div>
 
         <div className="col-edges">

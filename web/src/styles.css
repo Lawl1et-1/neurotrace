@@ -5,8 +5,8 @@
 @import "@fontsource/source-sans-3/400.css";
 @import "@fontsource/source-sans-3/600.css";
 @import "@fontsource/source-sans-3/700.css";
-@import "@fontsource/kalam/400.css";
-@import "@fontsource/kalam/700.css";
+@import "@fontsource/source-sans-3/400-italic.css";
+@import "@fontsource/source-sans-3/600-italic.css";
 
 /* The page is one EEG chart record: ruled paper, pen ink, a red annotation pen. */
 :root {
@@ -17,7 +17,7 @@
   --ink: #14212b;
   --ink-2: #33434e;
   --ink-3: #56666f;
-  --blue: #1f64ab;
+  --blue: #265d96;
   --blue-soft: #c9dbee;
   --red: #d23b2a;
   --red-soft: #f6d9d4;
@@ -25,7 +25,7 @@
 
   --f-label: "Barlow Condensed", "Arial Narrow", sans-serif;
   --f-body: "Source Sans 3", system-ui, sans-serif;
-  --f-pen: "Kalam", cursive;
+  --f-note: "Source Sans 3", system-ui, sans-serif; /* annotations: italic, red pen colour */
 
   --minor: 6px;
   --major: 30px;
@@ -66,7 +66,7 @@ html { scrollbar-color: var(--grid-major) var(--paper); }
 
 .tnum { font-variant-numeric: tabular-nums; }
 .label { font-family: var(--f-label); letter-spacing: 0.02em; }
-.pen { font-family: var(--f-pen); color: var(--red); }
+.pen { font: italic 600 1em var(--f-note); color: var(--red); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* ---------- record header (sticky, always shows the disclaimer) ---------- */
@@ -140,14 +140,15 @@ p { margin: 0 0 14px; max-width: 68ch; text-wrap: pretty; }
 .toggle { display: inline-flex; border: 1px solid var(--ink); border-radius: 3px; overflow: hidden; }
 .toggle button { font: 600 14px var(--f-label); letter-spacing: 0.06em; text-transform: uppercase; padding: 6px 10px; background: transparent; color: var(--ink); border: 0; cursor: pointer; }
 .toggle button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
-.map-stage { position: relative; flex: 1 0 auto; height: clamp(290px, calc(100svh - var(--header-h) - 450px), 640px); }
+.map-stage { position: relative; flex: 1 1 auto; min-height: 300px; }
+.map-note { margin: 6px 0 0; font-size: 13.5px; color: var(--ink-3); max-width: 70ch; }
 .map-stage svg, .map-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 
-.thesis { padding: 18px clamp(16px, 3vw, 40px) 14px 12px; justify-content: center; border-left: 1px dashed var(--grid-major); display: flex; flex-direction: column; gap: 14px; }
-.thesis h1 { font-size: clamp(36px, min(3.7vw, 5.6svh), 60px); line-height: 0.98; max-width: 11ch; }
+.thesis { padding: 18px clamp(16px, 3vw, 40px) 14px 12px; justify-content: center; border-left: 1px dashed var(--grid-major); display: flex; flex-direction: column; gap: 12px; }
+.thesis h1 { font-size: clamp(32px, min(3.1vw, 4.7svh), 52px); line-height: 0.98; max-width: 15ch; }
 .thesis h1 em { font-style: normal; color: var(--red); }
 .thesis .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
-.reading { font-size: 16px; color: var(--ink-2); max-width: 44ch; }
+.reading { font-size: 15.5px; line-height: 1.5; color: var(--ink-2); max-width: 46ch; margin: 0; }
 .reading strong { color: var(--ink); }
 
 .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font: 500 15px var(--f-label); color: var(--ink-2); }
@@ -181,7 +182,7 @@ p { margin: 0 0 14px; max-width: 68ch; text-wrap: pretty; }
 .report .col-ig { grid-column: span 7; }
 .report .col-att { grid-column: span 5; }
 .report h3 { margin-top: 0; font-size: 22px; display: flex; align-items: baseline; gap: 10px; }
-.report h3 .note { font: 400 16px var(--f-pen); color: var(--red); }
+.report h3 .note { font: italic 600 16px var(--f-note); color: var(--red); letter-spacing: 0; }
 .path-list { list-style: none; margin: 0; padding: 0; counter-reset: step; }
 .path-list li { display: grid; grid-template-columns: 30px 70px 1fr auto; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--grid-major); font-size: 15px; opacity: 0.35; transition: opacity 0.4s var(--ease-out); }
 .path-list li.lit { opacity: 1; }
@@ -196,14 +197,16 @@ p { margin: 0 0 14px; max-width: 68ch; text-wrap: pretty; }
 .table td.num { font: 500 16px var(--f-label); }
 .table tr.hl td { background: var(--paper-deep); }
 .table td.num, .table th.num { text-align: right; }
-.empty { font: 400 19px var(--f-pen); color: var(--ink-3); padding: 18px 0; }
+.empty { font: italic 400 19px var(--f-note); color: var(--ink-3); padding: 18px 0; max-width: 62ch; }
 
 /* ---------- method & limitations ---------- */
-.steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0; border-top: 1.5px solid var(--ink); margin-top: 28px; }
-.steps > div { padding: 18px 18px 22px 0; border-bottom: 1px solid var(--grid-major); }
-.steps h4 { font: 600 22px var(--f-label); margin: 0 0 6px; }
-.steps p { font-size: 15.5px; color: var(--ink-2); margin: 0; }
-.steps .sig { font: 400 16px var(--f-pen); color: var(--red); display: block; margin-top: 8px; }
+.pipeline { list-style: none; margin: 28px 0 0; padding: 0; border-top: 1.5px solid var(--ink); max-width: 1080px; }
+.pipeline li { display: grid; grid-template-columns: 48px minmax(0, 62ch) minmax(160px, 1fr); gap: 0 24px; align-items: baseline; padding: 16px 0 18px; border-bottom: 1px solid var(--grid-major); }
+.pipeline .code { font: 700 26px/1 var(--f-label); color: var(--ink); }
+.pipeline h4 { font: 600 22px var(--f-label); margin: 0 0 4px; }
+.pipeline p { font-size: 16.5px; color: var(--ink-2); margin: 0; }
+.pipeline .ann { font: italic 600 16px var(--f-note); color: var(--red); border-left: 1px solid var(--red); padding-left: 10px; }
+@media (max-width: 760px) { .pipeline li { grid-template-columns: 36px minmax(0, 1fr); } .pipeline .ann { grid-column: 2; margin-top: 8px; } }
 .caveats { list-style: none; padding: 0; margin: 24px 0 0; max-width: 78ch; }
 .caveats li { padding: 14px 0 14px 34px; border-bottom: 1px solid var(--grid-major); position: relative; }
 .caveats li::before { content: ""; position: absolute; left: 4px; top: 22px; width: 16px; height: 2px; background: var(--red); }
@@ -217,7 +220,8 @@ footer.end { padding: 28px 16px 40px calc(var(--gutter) + 16px); border-top: 2px
   .explorer .gutter-top { display: none; }
   .explorer .map-pane { grid-column: 1; grid-row: 1; padding: 12px 12px 4px; }
   .explorer .map-stage { height: min(78vw, 520px); }
-  .explorer .thesis { grid-column: 1; grid-row: 2; border-left: 0; padding: 8px 16px 20px; }
+  .explorer .transport { grid-row: 2; border-top: 1px solid var(--grid-major); }
+  .explorer .thesis { grid-column: 1; grid-row: 3; border-left: 0; padding: 8px 16px 20px; }
   .explorer .thesis h1 { max-width: 14ch; }
   .report > * { grid-column: 1 / -1 !important; }
   .rec-header nav { display: none; }

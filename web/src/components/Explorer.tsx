@@ -185,6 +185,14 @@ export default function Explorer({ index }: { index: Index }) {
               )}
             </div>
           </div>
+          {seg && (
+              <p className="map-note">
+                {isSyn
+                  ? "Synthetic subject held out from training: the dashed green arrows are the couplings that were really injected."
+                  : `CHB-MIT ${seg.record}, held out from training (leave-one-subject-out). Green band: the clinicians' seizure annotation.`}{" "}
+                {segMeta && `${seg.events.length} flagged, ${segMeta.n_labelled} labelled.`}
+              </p>
+            )}
           <div className="map-stage">
             {error && <p className="empty">Could not load this recording ({error}).</p>}
             {!seg && !error && <p className="empty">Loading the record…</p>}
@@ -201,7 +209,7 @@ export default function Explorer({ index }: { index: Index }) {
 
         <div className="thesis">
           <h1>
-            How EEG channels <em>drive each other</em>, and when that changes.
+            How EEG channels come to <em>predict each other</em>, and when that changes.
           </h1>
           <p className="reading">
             NEUROTRACE learns a <strong>directed graph between electrodes for every second</strong> of a recording,
@@ -218,18 +226,10 @@ export default function Explorer({ index }: { index: Index }) {
               <Code /> Code &amp; results
             </a>
           </div>
-          {seg && (
-            <p className="small">
-              {isSyn
-                ? "Synthetic subject held out from training: the dashed green arrows are the couplings that were really injected."
-                : `CHB-MIT ${seg.record}, held out from training (leave-one-subject-out). Green band: the clinicians' seizure annotation.`}{" "}
-              {segMeta && `${seg.events.length} flagged, ${segMeta.n_labelled} labelled.`}
-            </p>
-          )}
         </div>
 
         {seg && (
-          <Traces seg={seg} t={t} span={span} hot={hot} setHot={setHot} lit={litSet} onSeek={(v) => { setPlaying(false); setT(v); }} showTruth={isSyn && showTruth} />
+          <Traces seg={seg} t={t} span={span} hot={hot} setHot={setHot} lit={litSet} selected={ev} onSeek={(v) => { setPlaying(false); setT(v); }} showTruth={isSyn && showTruth} />
         )}
         {seg && (
           <div className="transport">
