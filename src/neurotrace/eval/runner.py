@@ -138,7 +138,7 @@ def run_cv(cfg: DictConfig, recs: list[WindowedRecording], device: str, out_dir:
             by_rec = {r.record: r for r in test_recs}
             rows += evaluate_recordings(
                 name, fi, scores, test_out, thr, stride_s,
-                lambda o: synthetic_extras(by_rec[o.record], o.adj),
+                lambda o, by_rec=by_rec: synthetic_extras(by_rec[o.record], o.adj),
             )
             last = pd.DataFrame([r for r in rows if r["variant"] == name and r["fold"] == fi])
             log(f"  {name:18s} auroc {last['auroc'].mean():.3f} auprc {last['auprc'].mean():.3f} "
@@ -179,7 +179,7 @@ def classical_baselines(cfg: DictConfig, recs: list[WindowedRecording], methods:
     rec_list = list(recs)
     for i, r in enumerate(rec_list):
         ref = rec_list[(i + 1) % len(rec_list)]
-        for m, (sc, a, idx) in per[r.record].items():
+        for m, (sc, a, _idx) in per[r.record].items():
             ref_sc = per[ref.record][m][0]
             z = causal_smooth(_robust_z(sc, ref_sc[~ref.labels]), 5)
             zref = causal_smooth(_robust_z(ref_sc, ref_sc[~ref.labels]), 5)
