@@ -183,6 +183,8 @@ p { margin: 0 0 14px; max-width: 68ch; text-wrap: pretty; }
 .report .col-ig { grid-column: span 7; }
 .report .col-att { grid-column: span 5; }
 .report h3 { margin-top: 0; font-size: 22px; display: flex; align-items: baseline; gap: 10px; }
+.warn { border-left: 3px solid var(--red); padding: 8px 12px; margin: 0 0 16px; max-width: 72ch; color: var(--ink); background: rgba(210, 59, 42, 0.05); }
+.warn strong { color: var(--red-ink); }
 .report h3 .note { font: italic 600 16px var(--f-note); color: var(--red-ink); letter-spacing: 0; }
 .path-list { list-style: none; margin: 0; padding: 0; counter-reset: step; }
 .path-list li { display: grid; grid-template-columns: 30px 70px 1fr auto; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--grid-major); font-size: 15px; opacity: 0.35; transition: opacity 0.4s var(--ease-out); }

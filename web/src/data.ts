@@ -49,6 +49,13 @@ export interface DetectedEvent {
   ig_bands: number[][]; // channel x band
   ig_channel_time: number[][]; // window x channel
   ig_delta: number;
+  ig_rel_delta?: number;
+  ig_steps?: number;
+  ig_converged?: boolean;
+  shared_share?: number; // share of the graph increase on derivations sharing an electrode (excluded)
+  hub?: number | null;
+  hub_share?: number;
+  hub_warning?: boolean;
   attention: number[] | null;
 }
 
@@ -83,6 +90,7 @@ export interface Segment {
   labels: { start_s: number; end_s: number }[];
   events: DetectedEvent[];
   truth: { base_edges: [number, number][]; events: TruthEvent[] } | null;
+  shared_pairs?: number[][];
 }
 
 const base = import.meta.env.BASE_URL;
@@ -130,16 +138,27 @@ export interface Edge {
 }
 
 /** Strongest edges at window t with their change against the previous 60 windows. */
+/** Ordered pairs of bipolar derivations that share an electrode: coupled by construction, never drawn. */
+export function sharedSet(seg: Segment): Set<string> {
+  const s = new Set<string>();
+  for (const [i, j] of seg.shared_pairs ?? []) {
+    s.add(`${i}-${j}`);
+    s.add(`${j}-${i}`);
+  }
+  return s;
+}
+
 export function edgesAt(seg: Segment, t: number, k = 20): Edge[] {
   if (!seg.adj) return [];
   const c = seg.ch_names.length;
+  const shared = sharedSet(seg);
   const now = meanAdj(seg, t - 1, t + 2);
   // change is only meaningful once there is a baseline minute (at least 20 s) behind the pen
   const before = t >= 20 ? meanAdj(seg, t - 60, t - 5) : now;
   const all: Edge[] = [];
   for (let i = 0; i < c; i++)
     for (let j = 0; j < c; j++)
-      if (i !== j) all.push({ src: i, dst: j, w: now[i][j], change: now[i][j] - before[i][j] });
+      if (i !== j && !shared.has(`${i}-${j}`)) all.push({ src: i, dst: j, w: now[i][j], change: now[i][j] - before[i][j] });
   all.sort((a, b) => b.w - a.w);
   const top = all[0]?.w ?? 0;
   // keep the strong edges only: a faint long-range edge is noise on a map

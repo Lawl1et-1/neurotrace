@@ -78,6 +78,20 @@ export default function EventReport({ seg, index, selected, onSelect, reveal, se
             ? " On real EEG there is no ground truth for the path: read it as where the model saw the dependency structure change first."
             : ""}
       </p>
+      {ev.hub_warning && ev.hub != null && (
+        <p className="warn" role="note">
+          <strong>Hub warning.</strong> {names[ev.hub]} takes part in {Math.round((ev.hub_share ?? 0) * 100)} % of this event's graph
+          increase (an even spread would give each channel about {Math.round(100 / names.length)} %). One channel dominating
+          more often means an electrode problem, an artefact on one derivation or a reference effect than a spread across the
+          brain.
+        </p>
+      )}
+      {(ev.shared_share ?? 0) > 0 && (
+        <p className="small" style={{ marginTop: -6, marginBottom: 14 }}>
+          {Math.round((ev.shared_share ?? 0) * 100)} % of the increase sat on pairs of derivations that share an electrode;
+          those edges are left out of the path and the edge table.
+        </p>
+      )}
 
       <div className="report">
         <div className="col-path">
@@ -100,8 +114,8 @@ export default function EventReport({ seg, index, selected, onSelect, reveal, se
           </ol>
           {truth && (
             <p className="small" style={{ marginTop: 10 }}>
-              True order: {truth.order.map((c) => names[c]).join(" → ")}. {matched} of {truth.order.length} channels recovered. The walk starts where band power rose
-              most among the channels whose outgoing dependencies grew, then follows the edges that grew most. The injected
+              True order: {truth.order.map((c) => names[c]).join(" → ")}. {matched} of {truth.order.length} channels recovered. The walk starts at the channel whose
+              outgoing dependencies grew most, then follows the edges that grew most. The injected
               delays are 15–40 ms, far below the {stride} s window step, so only the order is testable.
             </p>
           )}
@@ -166,7 +180,10 @@ export default function EventReport({ seg, index, selected, onSelect, reveal, se
           </svg>
           <p className="small">
             Attribution magnitude of the prediction error to each channel's band power, summed over the {ev.ig_channel_time.length} input windows; the eight largest channels are shown.
-            Convergence error {ev.ig_delta.toExponential(1)}. It explains the model, not the brain.
+            Convergence error {ev.ig_delta.toExponential(1)}
+            {ev.ig_steps != null && ` after ${ev.ig_steps} steps`}
+            {ev.ig_converged === false && " (did not reach the 1e-2 target: read with care)"}. The GNN's edge choice is held at
+            this window's along the integration path. It explains the model, not the brain.
           </p>
         </div>
 

@@ -189,7 +189,7 @@ export default function Explorer({ index }: { index: Index }) {
               <p className="map-note">
                 {isSyn
                   ? "Synthetic subject held out from training: the dashed green arrows are the couplings that were really injected."
-                  : `CHB-MIT ${seg.record}, held out from training (leave-one-subject-out). Green band: the clinicians' seizure annotation.`}{" "}
+                  : `CHB-MIT ${seg.record}, held out from training (leave-one-subject-out). Green band: the clinicians' seizure annotation. Edges between derivations that share an electrode (${seg.shared_pairs?.length ?? 0} pairs, e.g. FP1-F7 and F7-T7) are coupled by construction and are not drawn.`}{" "}
                 {segMeta && `${seg.events.length} flagged, ${segMeta.n_labelled} labelled.`}
               </p>
             )}

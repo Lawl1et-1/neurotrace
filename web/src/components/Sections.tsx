@@ -57,7 +57,7 @@ const PIPELINE: { code: string; title: string; text: string; ann: string }[] = [
   { code: "A", title: "Anomaly score", ann: "z(error) + z(ΔA) + ½ z(fit)",
     text: "Robust z of the prediction error, plus how far the graph has moved from the preceding minute, plus the within-window forecast error; smoothed causally and thresholded on held-out normal data." },
   { code: "X", title: "Explanation", ann: "why this flag",
-    text: "Propagation path (start channel from band-power rise × outgoing graph increase, then a walk over the edges that grew), edge masking, Integrated Gradients over channel × window × band, Transformer attention." },
+    text: "Propagation path (start at the channel whose outgoing dependencies grew most, then a walk over the edges that grew; edges between derivations sharing an electrode are excluded), edge masking, Integrated Gradients over channel × window × band, Transformer attention." },
 ];
 
 export function Method() {
