@@ -44,6 +44,26 @@ class EventExplanation:
     signal_path: list[PathStep] = field(default_factory=list)
     top_edges: list[tuple[int, int, float]] = field(default_factory=list)  # (src, dst, delta)
     delta_adj: np.ndarray | None = None
+    shared_share: float = 0.0  # share of the graph increase on edges between derivations sharing an electrode
+    hub: int | None = None  # channel involved in the largest share of the (unmasked) graph increase
+    hub_share: float = 0.0
+    hub_warning: bool = False
+
+
+# A channel involved in more than this share of an event's graph increase is flagged: with C channels
+# an even spread gives each about 1/C (0.06 for 18), so 0.25 is a single channel dominating, which
+# points to an electrode problem, an artefact on one derivation or a reference effect, not a spread.
+HUB_WARN_SHARE = 0.25
+
+
+def hub_stats(inc: np.ndarray) -> tuple[int | None, float]:
+    """Channel with the largest share of the total increase on its in- plus out-edges (shares sum to 1)."""
+    tot = float(inc.sum())
+    if tot <= 0:
+        return None, 0.0
+    involve = (inc.sum(axis=0) + inc.sum(axis=1)) / (2 * tot)
+    h = int(np.argmax(involve))
+    return h, float(involve[h])
 
 
 def detect_events(score: np.ndarray, threshold: float, min_len: int = 2, merge_gap: int = 5) -> list[tuple[int, int]]:
@@ -96,16 +116,19 @@ def choose_seed(inc: np.ndarray, rule: str = "net", power_z: np.ndarray | None =
 def graph_path(adj: np.ndarray, start: int, end: int, times: np.ndarray, ch_names: list[str],
                baseline_s: int = 60, stride_s: float = 1.0, max_steps: int | None = None,
                min_rel: float = 0.25, seed_rule: str = "net",
-               bands: np.ndarray | None = None) -> tuple[list[PathStep], np.ndarray]:
+               bands: np.ndarray | None = None, exclude: np.ndarray | None = None) -> tuple[list[PathStep], np.ndarray]:
     """Greedy best-first traversal of the increased edges of the event graph (see module doc).
 
     Works with any (N, C, C) directed adjacency sequence: the learned graph or a classical
     estimate such as per-window Granger. Edges below ``min_rel`` x the largest increase are ignored.
-    The start channel comes from :func:`choose_seed` (``hybrid`` needs ``bands``).
+    The start channel comes from :func:`choose_seed` (``hybrid`` needs ``bands``). Edges where
+    ``exclude`` is True (e.g. bipolar derivations sharing an electrode) are never walked.
     """
     d = delta_graph(adj, start, end, baseline_s, stride_s)
     inc = np.clip(d, 0, None)
     np.fill_diagonal(inc, 0)
+    if exclude is not None:
+        inc[exclude] = 0.0
     c = len(ch_names)
     min_delta = min_rel * float(inc.max()) if inc.max() > 0 else np.inf
     pz = power_deviation(bands, start, end, baseline_s, stride_s) if bands is not None else None
@@ -159,12 +182,29 @@ def signal_path(bands: np.ndarray, start: int, end: int, times: np.ndarray, ch_n
 
 
 def explain_event(adj: np.ndarray | None, bands: np.ndarray, score: np.ndarray, start: int, end: int,
-                  times: np.ndarray, ch_names: list[str], stride_s: float = 1.0, n_top: int = 10) -> EventExplanation:
-    """Bundle graph path, signal path and top changed edges for one detected event."""
+                  times: np.ndarray, ch_names: list[str], stride_s: float = 1.0, n_top: int = 10,
+                  exclude: np.ndarray | None = None) -> EventExplanation:
+    """Bundle graph path, signal path and top changed edges for one detected event.
+
+    Paths always start from the ``net`` rule (largest net outgoing increase, DECISIONS D14).
+    ``exclude`` (C, C) removes edges from the path and the top-edge list; how much of the increase
+    sat on them is kept in ``shared_share``. The hub flag uses the increase on the kept edges.
+    """
     ex = EventExplanation(start, end, float(times[start]), float(np.nanmax(score[start:end])))
     if adj is not None:
-        ex.graph_path, d = graph_path(adj, start, end, times, ch_names, stride_s=stride_s, seed_rule="net")
+        ex.graph_path, d = graph_path(adj, start, end, times, ch_names, stride_s=stride_s, seed_rule="net",
+                                      exclude=exclude)
         ex.delta_adj = d
+        d = d.copy()
+        inc = np.clip(d, 0, None)
+        np.fill_diagonal(inc, 0)
+        if exclude is not None:
+            ex.shared_share = float(inc[exclude].sum() / inc.sum()) if inc.sum() > 0 else 0.0
+            inc = np.where(exclude, 0.0, inc)
+            d = np.where(exclude, -np.inf, d)
+        ex.hub, ex.hub_share = hub_stats(inc)
+        ex.hub_warning = ex.hub_share > HUB_WARN_SHARE
+        np.fill_diagonal(d, -np.inf)
         flat = np.argsort(d, axis=None)[::-1][:n_top]
         ex.top_edges = [(int(i // d.shape[1]), int(i % d.shape[1]), float(d.flat[i])) for i in flat]
     ex.signal_path = signal_path(bands, start, end, times, ch_names, stride_s=stride_s)

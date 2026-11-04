@@ -45,13 +45,13 @@ def lag_stack(x: torch.Tensor, max_lag: int) -> torch.Tensor:
     return torch.stack([x[..., max_lag - k : length - k] for k in range(1, max_lag + 1)], dim=2)
 
 
-@torch.no_grad()
 def var_evidence(x: torch.Tensor, order: int, ridge: float = 1e-2) -> torch.Tensor:
     """Conditional (multivariate) Granger evidence from a batched ridge VAR fit.
 
     ``x``: (N, C, L). Returns (N, C, C, order + 1) in [src, dst]: ``log1p(Wald)`` of the lag block
-    followed by the ``order`` lag coefficients ``B[k, dst, src]``. No gradient flows through it:
-    it is input evidence, the network learns how much to trust it.
+    followed by the ``order`` lag coefficients ``B[k, dst, src]``. It has no parameters: in training
+    ``x`` is data and nothing flows back through it; it stays differentiable in ``x`` so input
+    attributions (Integrated Gradients) see the path through the graph.
     """
     n, c, length = x.shape
     x = x.double()

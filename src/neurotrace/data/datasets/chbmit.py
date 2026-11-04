@@ -22,6 +22,10 @@ from neurotrace.graph.montage import CHBMIT_BIPOLAR
 
 BASE_URL = "https://physionet.org/files/chbmit/1.0.0"
 
+# chb21 is the same patient as chb01, recorded 1.5 years later (PhysioNet notes). Splits are by
+# patient, so its recordings carry the subject id chb01 and are always held out together.
+PATIENT_OF: dict[str, str] = {"chb21": "chb01"}
+
 
 @dataclass
 class ChbFile:
@@ -159,4 +163,6 @@ def load_chbmit(cache_dir: str | Path, subjects: list[str] | None = None) -> lis
     recs = [WindowedRecording.load(p) for p in paths]
     if subjects:
         recs = [r for r in recs if r.subject in set(subjects)]
+    for r in recs:
+        r.subject = PATIENT_OF.get(r.subject, r.subject)
     return recs

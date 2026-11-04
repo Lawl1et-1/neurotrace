@@ -38,13 +38,28 @@ def _error(model: NeuroTrace, x: torch.Tensor, bands: torch.Tensor, edge_mask=No
     return ((out["pred"][:, -2] - target) ** 2).mean(dim=(1, 2))
 
 
+IG_STEPS = (32, 64, 128, 256, 512, 1024)
+
+
 def integrated_gradients(model: NeuroTrace, rec: WindowedRecording, t: int, device: str = "cpu",
-                         n_steps: int = 32) -> dict[str, np.ndarray]:
+                         n_steps: int | None = None, tol: float = 1e-2,
+                         steps: tuple[int, ...] = IG_STEPS) -> dict:
     """IG of the prediction error at window ``t``.
 
     Baselines: zero signal for the raw input and the training-mean band power for the band input
     (i.e. "an average, quiet window"). Returns ``bands`` (S, C, F) and ``raw`` (S, C) attributions
-    (raw summed over samples) plus the convergence delta.
+    (raw summed over samples).
+
+    The integral is approximated with more and more steps until the convergence error - the gap
+    between the summed attributions and F(x) - F(baseline) - is below ``tol`` (absolute; the
+    relative error is reported too). ``n_steps`` fixes the number of steps instead. ``converged``
+    is False if even the largest step count does not reach ``tol``; those attributions are reported
+    as unconverged rather than silently used.
+
+    Two things make the attribution complete without changing F(x): gradients flow through the
+    learned graph (``attribution_mode``; it is detached in training), and the GAT keeps the top-k
+    edges chosen at ``x`` along the path, so the explained function is continuous. The attribution
+    therefore explains the model with its edge selection fixed to the one of the explained window.
     """
     from captum.attr import IntegratedGradients
 
@@ -52,12 +67,33 @@ def integrated_gradients(model: NeuroTrace, rec: WindowedRecording, t: int, devi
     x, b = _sequence(rec, t, model.cfg.seq_len, device)
     ig = IntegratedGradients(lambda xx, bb: _error(model, xx, bb))
     base = (torch.zeros_like(x), model.band_mean.expand_as(b).clone())
-    (ax, ab), delta = ig.attribute((x, b), baselines=base, n_steps=n_steps, internal_batch_size=8,
-                                   return_convergence_delta=True)
+    model.attribution_mode = True  # gradients also flow through the learned graph (detached in training)
+    gat = getattr(model, "spatial", None)
+    freeze = gat is not None and hasattr(gat, "frozen_src")
+    if freeze:  # keep the GNN's top-k edge choice of the explained input along the whole path
+        with torch.no_grad():
+            model(x, b)
+        gat.frozen_src = gat.last_src
+    try:
+        with torch.no_grad():
+            gap = float(_error(model, x, b) - _error(model, *base))
+        for n in (n_steps,) if n_steps else steps:
+            (ax, ab), delta = ig.attribute((x, b), baselines=base, n_steps=n, internal_batch_size=32,
+                                           return_convergence_delta=True)
+            err = float(delta.abs().max())
+            if err < tol:
+                break
+    finally:
+        model.attribution_mode = False
+        if freeze:
+            gat.frozen_src = None
     return {
         "bands": ab[0].detach().cpu().numpy(),
         "raw": ax[0].sum(dim=-1).detach().cpu().numpy(),
-        "delta": float(delta.abs().max()),
+        "delta": err,
+        "rel_delta": err / abs(gap) if gap else float("nan"),
+        "n_steps": n,
+        "converged": err < tol,
     }
 
 

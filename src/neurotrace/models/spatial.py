@@ -16,15 +16,19 @@ import torch
 from torch import nn
 
 
-def topk_edge_index(adj: torch.Tensor, k: int) -> tuple[torch.Tensor, torch.Tensor]:
+def topk_edge_index(adj: torch.Tensor, k: int, src: torch.Tensor | None = None) -> tuple[torch.Tensor, torch.Tensor]:
     """Batched dense adjacency -> PyG ``edge_index`` / ``edge_attr`` of one disjoint big graph.
 
-    For each target node keep its ``k`` strongest sources (plus a self loop with weight 1).
+    For each target node keep its ``k`` strongest sources (plus a self loop with weight 1). A given
+    ``src`` (N, k, C) fixes which sources are kept; only their weights are read from ``adj``.
     """
     n, c, _ = adj.shape
     k = min(k, c - 1)
     a = adj.masked_fill(torch.eye(c, device=adj.device, dtype=torch.bool), -1.0)
-    vals, src = a.topk(k, dim=1)  # over sources, for every dst: (N, k, C)
+    if src is None:
+        vals, src = a.topk(k, dim=1)  # over sources, for every dst: (N, k, C)
+    else:
+        vals = a.gather(1, src)
     dst = torch.arange(c, device=adj.device).expand(n, k, c)
     offset = (torch.arange(n, device=adj.device) * c)[:, None, None]
     src_all = torch.cat([(src + offset).reshape(-1), torch.arange(n * c, device=adj.device)])
@@ -47,10 +51,19 @@ class GATSpatial(nn.Module):
         )
         self.norms = nn.ModuleList(nn.LayerNorm(hidden) for _ in range(layers))
         self.last_attention: torch.Tensor | None = None
+        # Integrated Gradients freezes the kept edges at the explained input: the top-k choice is a step
+        # function of the input, and its jumps are invisible to gradients (the integral never converges).
+        self.frozen_src: torch.Tensor | None = None
 
     def forward(self, h: torch.Tensor, adj: torch.Tensor) -> torch.Tensor:
         n, c, d = h.shape
-        edge_index, edge_attr = topk_edge_index(adj, self.k)
+        src = None
+        if self.frozen_src is not None:
+            src = self.frozen_src.repeat(n // self.frozen_src.shape[0], 1, 1)  # batch of paths, window-major
+        else:
+            k = min(self.k, c - 1)
+            self.last_src = adj.masked_fill(torch.eye(c, device=adj.device, dtype=torch.bool), -1.0).topk(k, dim=1)[1].detach()
+        edge_index, edge_attr = topk_edge_index(adj, self.k, src)
         x = h.reshape(n * c, d)
         for conv, norm in zip(self.convs, self.norms, strict=True):
             out, (ei, alpha) = conv(x, edge_index, edge_attr=edge_attr, return_attention_weights=True)

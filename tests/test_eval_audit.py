@@ -82,3 +82,23 @@ def test_summarise_reports_subject_level_ci() -> None:
     assert abs(out["auroc_mean"] - 0.75) < 1e-9
     assert abs(out["auroc_ci95"] - 3.182446 * np.std([0.6, 0.7, 0.8, 0.9], ddof=1) / 2) < 1e-4
     assert abs(out["sensitivity_mean"] - 0.5) < 1e-9 and abs(out["fa_per_hour_mean"] - 0.5) < 1e-9
+
+
+def test_operating_points_at_fa_matches_budget():
+    """An easy detector: one true event plus two isolated spikes. At 0 FA/h only the event clears the
+    threshold; with a loose budget the event is still found and false alarms stay within it."""
+    from neurotrace.eval.metrics import operating_points_at_fa
+
+    rng = np.random.default_rng(0)
+    n = 7200  # 2 h at 1 s
+    s = rng.normal(0, 1, n)
+    y = np.zeros(n, bool)
+    y[3000:3060] = True
+    s[3000:3060] += 8
+    s[1000] += 5
+    s[5000] += 5
+    ops = operating_points_at_fa([s], [y], 1.0, targets=(0.0, 1.0, 100.0))
+    assert ops[0.0]["sensitivity"] == 1.0 and ops[0.0]["fa_per_hour"] == 0.0
+    assert ops[1.0]["fa_per_hour"] <= 1.0 and ops[1.0]["sensitivity"] == 1.0
+    assert ops[100.0]["threshold"] <= ops[1.0]["threshold"] <= ops[0.0]["threshold"]
+    assert 0 <= ops[0.0]["median_latency_s"] <= 1

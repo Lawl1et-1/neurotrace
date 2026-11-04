@@ -76,6 +76,21 @@ def _trailing_z(v: np.ndarray, n: int) -> np.ndarray:
     return np.nan_to_num((v - past.median().to_numpy()) / iqr, nan=0.0, posinf=0.0, neginf=0.0)
 
 
+def save_scores(out_dir: Path | None, detector: str, rec, score: np.ndarray, threshold: float, fold: int,
+                **extra: np.ndarray | float) -> None:
+    """Keep one detector's per-window score for one recording (``results/<ds>/scores/<detector>/``).
+
+    Matched-false-alarm operating points, paired tests, combined detectors and the score-term
+    analysis (``scripts/analyze_results.py``) are computed from these files, not by retraining.
+    """
+    if out_dir is None:
+        return
+    d = out_dir / "scores" / detector
+    d.mkdir(parents=True, exist_ok=True)
+    np.savez_compressed(d / f"{rec.record}.npz", score=np.asarray(score, np.float32), labels=rec.labels,
+                        threshold=threshold, fold=fold, subject=rec.subject, stride_s=rec.stride_s, **extra)
+
+
 def evaluate_recordings(name: str, fold: int, scores: list[np.ndarray], outs_or_recs, threshold: float,
                         stride_s: float, extra_fn=None) -> list[dict]:
     rows = []
@@ -138,6 +153,7 @@ def run_cv(cfg: DictConfig, recs: list[WindowedRecording], device: str, out_dir:
             test_recs = by_subject(recs, test_s)
             test_out = _score_outputs(model, test_recs, device)
             use_prob = name == "supervised_head" and test_out[0].prob is not None
+            cal = None
             if use_prob:
                 val_scores = [causal_smooth(np.nan_to_num(o.prob), 5) for o in val_out]
                 scores = [causal_smooth(np.nan_to_num(o.prob), 5) for o in test_out]
@@ -147,6 +163,12 @@ def run_cv(cfg: DictConfig, recs: list[WindowedRecording], device: str, out_dir:
                 scores = [cal.score(o) for o in test_out]
             normal = np.concatenate([s[~o.labels] for s, o in zip(val_scores, val_out, strict=True)])
             thr = float(np.percentile(normal, ev.threshold_pct))
+            for sc, o, r in zip(scores, test_out, test_recs, strict=True):
+                comp = {}
+                if cal is not None:  # unsmoothed z of each term and its weight in the score
+                    comp = {f"z_{k}": cal.z(o, k) for k in ("pred_err", "graph_change", "var_err")}
+                    comp.update(w_pred_err=1.0, w_graph_change=cal.lambda_graph, w_var_err=cal.lambda_var, smooth=cal.smooth)
+                save_scores(out_dir if ev.get("save_scores", True) else None, name, r, sc, thr, fi, **comp)
             by_rec = {r.record: r for r in test_recs}
             rows += evaluate_recordings(
                 name, fi, scores, test_out, thr, stride_s,
@@ -164,14 +186,14 @@ def run_cv(cfg: DictConfig, recs: list[WindowedRecording], device: str, out_dir:
 
 
 def classical_baselines(cfg: DictConfig, recs: list[WindowedRecording], methods: list[str],
-                        log=print) -> pd.DataFrame:
+                        log=print, out_dir: Path | None = None) -> pd.DataFrame:
     """Connectivity-deviation and band-power-deviation anomaly scores, plus edge recovery (synthetic).
 
     The connectivity score is the distance of the current graph from the preceding minute's graph
     (``baseline_deviation``), the same quantity the model's own graph term uses.
 
-    The threshold is the ``threshold_pct`` percentile of the subject's own normal windows *from a
-    different subject* (the next one in the list) so it is not tuned on the test subject.
+    The threshold is the ``threshold_pct`` percentile of the normal windows of a *different
+    subject* (the next one in sorted order, all of its recordings pooled), never of the test subject.
     """
     ev = cfg.eval
     every = int(ev.get("baseline_every", 1))
@@ -190,19 +212,25 @@ def classical_baselines(cfg: DictConfig, recs: list[WindowedRecording], methods:
         res["bandpower_dev"] = (np.abs((b - med) / iqr).mean(axis=1), None, idx)
         per[r.record] = res
         log(f"  baselines {r.record}")
+    def norm(sc: np.ndarray, ref_normal: np.ndarray) -> np.ndarray:
+        if ev.get("adaptive_norm", 0):
+            return _trailing_z(sc, int(ev.adaptive_norm))
+        return _robust_z(sc, ref_normal)
+
+    subjects = sorted({r.subject for r in recs})
     rows = []
-    rec_list = list(recs)
-    for i, r in enumerate(rec_list):
-        ref = rec_list[(i + 1) % len(rec_list)]
+    for r in recs:
+        ref_s = subjects[(subjects.index(r.subject) + 1) % len(subjects)]
+        refs = [x for x in recs if x.subject == ref_s and x.subject != r.subject]
         for m, (sc, a, _idx) in per[r.record].items():
-            ref_sc = per[ref.record][m][0]
-            if ev.get("adaptive_norm", 0):
-                z = causal_smooth(_trailing_z(sc, int(ev.adaptive_norm)), 5)
-                zref = causal_smooth(_trailing_z(ref_sc, int(ev.adaptive_norm)), 5)
-            else:
-                z = causal_smooth(_robust_z(sc, ref_sc[~ref.labels]), 5)
-                zref = causal_smooth(_robust_z(ref_sc, ref_sc[~ref.labels]), 5)
-            thr = float(np.percentile(zref[~ref.labels], ev.threshold_pct))
+            ref_raw = np.concatenate([per[x.record][m][0][~x.labels] for x in refs]) if refs else sc[~r.labels]
+            z_raw = norm(sc, ref_raw)
+            z = causal_smooth(z_raw, 5)
+            zref = (np.concatenate([causal_smooth(norm(per[x.record][m][0], ref_raw), 5)[~x.labels] for x in refs])
+                    if refs else z[~r.labels])  # a single subject: nothing else to calibrate on
+            thr = float(np.percentile(zref, ev.threshold_pct))
+            save_scores(out_dir if ev.get("save_scores", True) else None, f"baseline_{m}", r, z, thr, -1,
+                        z_raw=z_raw.astype(np.float32))
             row = {"variant": f"baseline_{m}", "fold": -1, "subject": r.subject, "record": r.record}
             row.update(window_metrics(z, r.labels))
             row.update(event_metrics(z, r.labels, thr, r.stride_s))

@@ -80,3 +80,20 @@ def topomap_positions(ch_names: list[str]) -> np.ndarray:
     phi = np.arctan2(y, x)
     r = theta / (np.pi / 2)
     return np.stack([r * np.cos(phi), r * np.sin(phi)], axis=1)
+
+
+def shared_electrode_mask(ch_names: list[str]) -> np.ndarray:
+    """(C, C) boolean: True where two bipolar derivations share an electrode (e.g. FP1-F7 and F7-T7).
+
+    Such pairs are coupled by construction - the shared electrode enters both signals, with
+    opposite signs along a chain - so a dependency between them says nothing about the brain.
+    Referential channels (no ``-``) never share. The diagonal is False.
+    """
+    parts = [set(n.upper().split("-")) if "-" in n else set() for n in ch_names]
+    c = len(ch_names)
+    m = np.zeros((c, c), dtype=bool)
+    for i in range(c):
+        for j in range(c):
+            if i != j and parts[i] & parts[j]:
+                m[i, j] = True
+    return m

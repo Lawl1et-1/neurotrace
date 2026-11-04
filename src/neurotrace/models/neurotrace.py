@@ -112,6 +112,7 @@ class NeuroTrace(nn.Module):
         self.register_buffer("band_mean", torch.zeros(c, cfg.n_bands))
         self.register_buffer("band_std", torch.ones(c, cfg.n_bands))
 
+        self.attribution_mode = False  # set by integrated_gradients; never during training
         self.edges = DirectedEdgeInference(h, cfg.max_lag, dropout=cfg.dropout, var_order=cfg.var_order) if cfg.graph == "learned" else None
         if cfg.graph == "none":
             self.spatial: nn.Module = NoGraphSpatial(h, cfg.gnn_layers, cfg.dropout)
@@ -160,7 +161,8 @@ class NeuroTrace(nn.Module):
             out["adj"] = e["adj"]
             out["var_err"] = ((pred - target) ** 2).mean(dim=(1, 2))  # (N,)
             mix = self.cfg.prior_mix
-            learned = e["adj"].detach() if self.cfg.detach_graph else e["adj"]
+            # attribution_mode keeps the forward values and lets input gradients through the graph
+            learned = e["adj"].detach() if self.cfg.detach_graph and not self.attribution_mode else e["adj"]
             if edge_mask is not None:
                 learned = learned * edge_mask
                 out["adj"] = out["adj"] * edge_mask

@@ -104,3 +104,31 @@ def event_metrics(
         "fa_per_hour": false_alarms / hours if hours > 0 else float("nan"),
         "hours": hours,
     }
+
+
+def operating_points_at_fa(scores: list[np.ndarray], labels: list[np.ndarray], stride_s: float,
+                           targets: tuple[float, ...] = (0.5, 1.0, 2.0), n_candidates: int = 200,
+                           q_lo: float = 0.97, **event_kw) -> dict[float, dict[str, float]]:
+    """Best event sensitivity of one subject's recordings at a false-alarm rate <= each target.
+
+    Thresholds are scanned over the upper quantiles of the subject's own scores; for each target
+    the lowest threshold whose pooled false-alarm rate stays within it is kept (the scan does not
+    assume the rate is monotone in the threshold). This puts every detector at the *same*
+    false-alarm budget, so sensitivities and latencies can be compared; because the threshold is set
+    on the test subject it is an oracle operating point, not a deployable one.
+    """
+    pooled = np.concatenate([np.nan_to_num(s, nan=-np.inf) for s in scores])
+    fin = pooled[np.isfinite(pooled)]
+    cands = np.unique(np.quantile(fin, np.linspace(q_lo, 1.0, n_candidates))) if len(fin) else np.array([])
+    cands = np.append(cands, np.inf)  # never alarming always meets the target
+    curve = []
+    for thr in cands:
+        ms = [event_metrics(s, y, thr, stride_s, **event_kw) for s, y in zip(scores, labels, strict=True)]
+        fa, hours = sum(m["false_alarms"] for m in ms), sum(m["hours"] for m in ms)
+        n_ev, det = sum(m["n_events"] for m in ms), sum(m["detected"] for m in ms)
+        lat = [m["median_latency_s"] for m in ms if np.isfinite(m["median_latency_s"])]
+        curve.append({"threshold": float(thr), "detected": det, "n_events": n_ev,
+                      "sensitivity": det / n_ev if n_ev else float("nan"),
+                      "fa_per_hour": fa / hours if hours > 0 else 0.0,
+                      "median_latency_s": float(np.median(lat)) if lat else float("nan")})
+    return {t: next(c for c in curve if c["fa_per_hour"] <= t) for t in targets}  # curve is sorted by threshold

@@ -26,7 +26,7 @@ from neurotrace.eval.scoring import ScoreCalibration, run_recording
 from neurotrace.experiment import load_checkpoint, load_dataset, to_jsonable
 from neurotrace.explain.attribution import edge_masking, integrated_gradients, temporal_attention
 from neurotrace.explain.propagation import detect_events, explain_event
-from neurotrace.graph.montage import topomap_positions, unit_sphere_positions
+from neurotrace.graph.montage import shared_electrode_mask, topomap_positions, unit_sphere_positions
 from neurotrace.utils import RESULTS_DIR, ROOT, get_device
 
 TRACE_HZ = 64
@@ -52,11 +52,12 @@ def export_segment(model, rec, cal, thr, lo, hi, device, truth=None) -> dict:
     sig = resample_poly(sig, TRACE_HZ, int(rec.sfreq), axis=1)
     adj = out.adj[seg].astype(np.float32) if out.adj is not None else None
     amax = float(np.percentile(adj, 99.9)) if adj is not None else 1.0
+    shared = shared_electrode_mask(rec.ch_names)
     events = []
     for a, b in detect_events(score[seg], thr):
         ga, gb = lo + a, lo + b
         ex = explain_event(out.adj.astype(np.float32) if out.adj is not None else None, rec.bands, score, ga, gb,
-                           rec.times, rec.ch_names, rec.stride_s)
+                           rec.times, rec.ch_names, rec.stride_s, exclude=shared if shared.any() else None)
         t_peak = int(ga + np.nanargmax(score[ga:gb]))
         t_ex = max(t_peak, model.cfg.seq_len - 1)
         ig = integrated_gradients(model, rec, t_ex, device)
@@ -72,7 +73,10 @@ def export_segment(model, rec, cal, thr, lo, hi, device, truth=None) -> dict:
             "edge_masking": [{"src": s, "dst": d, "effect": round(v, 5)} for s, d, v in masks],
             "ig_bands": np.round(ig["bands"].sum(axis=0), 5).tolist(),  # (C, F) summed over windows
             "ig_channel_time": np.round(ig["bands"].sum(axis=2) + ig["raw"], 5).tolist(),  # (S, C)
-            "ig_delta": ig["delta"],
+            "ig_delta": ig["delta"], "ig_rel_delta": ig["rel_delta"], "ig_steps": ig["n_steps"],
+            "ig_converged": ig["converged"],
+            "shared_share": round(ex.shared_share, 4), "hub": ex.hub, "hub_share": round(ex.hub_share, 4),
+            "hub_warning": ex.hub_warning,
             "attention": np.round(att[-1][-1], 4).tolist() if att is not None else None,  # last layer, last query
         })
     label_runs = []
@@ -83,6 +87,7 @@ def export_segment(model, rec, cal, thr, lo, hi, device, truth=None) -> dict:
     return {
         "subject": rec.subject, "record": rec.record, "offset_s": float(rec.times[lo]),
         "ch_names": rec.ch_names,
+        "shared_pairs": np.argwhere(np.triu(shared)).tolist(),  # derivations sharing an electrode
         "pos2d": np.round(topomap_positions(rec.ch_names), 4).tolist(),
         "pos3d": np.round(unit_sphere_positions(rec.ch_names), 4).tolist(),
         "stride_s": rec.stride_s, "window_s": rec.window_s, "trace_hz": TRACE_HZ,
