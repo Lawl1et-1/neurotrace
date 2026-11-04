@@ -19,7 +19,7 @@ def leave_subjects_out(
     """
     subs = subjects_of(recs)
     rng = np.random.default_rng(seed)
-    order = list(rng.permutation(subs))
+    order = [str(s) for s in rng.permutation(subs)]
     n_folds = n_folds or len(subs)
     folds = [order[i::n_folds] for i in range(n_folds)]
     for test in folds:

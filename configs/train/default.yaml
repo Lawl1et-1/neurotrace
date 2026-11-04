@@ -1,12 +1,16 @@
 objective: next         # next (predict next window) | masked (reconstruct masked windows)
 mask_ratio: 0.25
+train_on: normal        # normal (drop sequences containing labelled windows) | all
+seq_stride: 2           # start a training sequence every k windows
 epochs: 30
 batch_size: 32
 lr: 1.0e-3
 weight_decay: 1.0e-4
 grad_clip: 1.0
+lambda_var: 1.0         # weight of the within-window forecast loss that trains the learned graph
+lambda_sparse: 0.03     # L1 penalty on the learned adjacency (sensitive: 0.02-0.03 works, >=0.05 collapses; DECISIONS D7)
 lambda_graph: 1.0       # weight of the graph-change term in the anomaly score
-lambda_sparse: 1.0e-3   # L1 penalty on the learned adjacency
 supervised: false       # add a seizure-detection head (real data only)
 num_workers: 0
 patience: 6
+max_batches: null

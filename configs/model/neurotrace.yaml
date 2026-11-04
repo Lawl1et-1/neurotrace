@@ -6,7 +6,7 @@ name: neurotrace
 graph: learned
 spatial: gat
 temporal: transformer
-input: raw              # raw | bands | both
+input: both             # raw | bands | both
 hidden: 64
 gnn_layers: 2
 heads: 4
@@ -16,4 +16,7 @@ dropout: 0.1
 seq_len: 8              # number of consecutive windows seen by the transformer
 causal: true
 prior_sigma: 0.5        # width (head radii) of the distance prior kernel
-prior_mix: 0.5          # A = mix * prior + (1 - mix) * learned
+prior_mix: 0.5          # A_gnn = mix * prior + (1 - mix) * learned
+max_lag: 8              # lags (samples) seen by the learned edge module (8 = 62 ms at 128 Hz)
+var_order: 5            # order of the per-window ridge VAR used as conditional evidence (0 = off)
+detach_graph: true       # learned graph trained only by its own forecasting loss

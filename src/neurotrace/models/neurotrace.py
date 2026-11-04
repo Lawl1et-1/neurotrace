@@ -52,6 +52,8 @@ class ModelConfig:
     prior_sigma: float = 0.5
     prior_mix: float = 0.5
     max_lag: int = 8
+    var_order: int = 5  # 0 disables the conditional VAR evidence (ablation)
+    detach_graph: bool = True  # the GNN reads the learned graph but does not train it (DECISIONS D6)
     objective: str = "next"
     supervised: bool = False
 
@@ -110,7 +112,7 @@ class NeuroTrace(nn.Module):
         self.register_buffer("band_mean", torch.zeros(c, cfg.n_bands))
         self.register_buffer("band_std", torch.ones(c, cfg.n_bands))
 
-        self.edges = DirectedEdgeInference(h, cfg.max_lag, dropout=cfg.dropout) if cfg.graph == "learned" else None
+        self.edges = DirectedEdgeInference(h, cfg.max_lag, dropout=cfg.dropout, var_order=cfg.var_order) if cfg.graph == "learned" else None
         if cfg.graph == "none":
             self.spatial: nn.Module = NoGraphSpatial(h, cfg.gnn_layers, cfg.dropout)
         elif cfg.spatial == "gat":
@@ -155,7 +157,8 @@ class NeuroTrace(nn.Module):
             out["adj"] = e["adj"]
             out["var_err"] = ((pred - target) ** 2).mean(dim=(1, 2))  # (N,)
             mix = self.cfg.prior_mix
-            adj_gnn = mix * self.prior[None] + (1 - mix) * e["adj"]
+            learned = e["adj"].detach() if self.cfg.detach_graph else e["adj"]
+            adj_gnn = mix * self.prior[None] + (1 - mix) * learned
         elif self.cfg.graph == "static":
             adj_gnn = self.prior[None].expand(n, -1, -1)
         else:
