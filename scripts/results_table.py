@@ -46,6 +46,7 @@ def cell(r: pd.Series, m: str, d: int = 2) -> str:
 
 def main(dataset: str) -> None:
     d = pd.read_csv(RESULTS_DIR / dataset / "summary.csv")
+    d = d[~d["variant"].str.startswith("term_")]  # score-term rows: own table in "analysis"
     d["o"] = d["variant"].map({v: i for i, v in enumerate(ORDER)})
     d = d.sort_values("o")
     cols = [("auroc", "Window AUROC", 3), ("auprc", "AUPRC", 3), ("sensitivity", "Sensitivity", 2),
