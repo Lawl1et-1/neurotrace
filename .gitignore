@@ -27,3 +27,4 @@ site/dist/
 .env
 *.log
 .impeccable/review/
+*.err

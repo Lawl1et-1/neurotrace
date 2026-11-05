@@ -30,7 +30,7 @@ export default function App() {
         {index && <Explorer index={index} />}
         <Method />
         {index && <Results index={index} />}
-        <Limitations />
+        <Limitations index={index} />
       </main>
       <footer className="end">
         <span>NEUROTRACE: a research prototype for spatio-temporal graph learning on EEG. Not for clinical use.</span>

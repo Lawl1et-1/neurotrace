@@ -18,6 +18,8 @@ export interface Index {
   bands: string[];
   segments: SegmentMeta[];
   summary: Record<string, SummaryRow[]>;
+  /** dataset -> analysis CSV name (per_patient, wilcoxon, matched_fa, term_ablation, ...) -> rows */
+  analysis?: Record<string, Record<string, SummaryRow[]>>;
 }
 
 export interface PathStep {

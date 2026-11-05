@@ -12,7 +12,7 @@ data-synth:
 
 ## Download a CHB-MIT subset and preprocess it into windows
 data:
-	$(PY) scripts/download_chbmit.py --subjects chb01 chb02 chb03 chb05 chb08 chb10
+	$(PY) scripts/download_chbmit.py
 	$(PY) scripts/preprocess.py data=chbmit
 
 train:
