@@ -70,8 +70,11 @@ def _fetch(url: str, dest: Path, retries: int = 5) -> Path:
     for attempt in range(retries):
         try:
             with urllib.request.urlopen(url, timeout=120) as r, open(tmp, "wb") as f:
+                size = int(r.headers.get("Content-Length") or -1)
                 while chunk := r.read(1 << 20):
                     f.write(chunk)
+            if size >= 0 and tmp.stat().st_size != size:  # connection closed early without an error
+                raise OSError(f"short read: {tmp.stat().st_size} of {size} bytes")
             tmp.replace(dest)
             return dest
         except OSError as e:
