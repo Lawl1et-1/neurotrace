@@ -127,3 +127,18 @@ def test_synthetic_is_reproducible() -> None:
     a = make_synthetic_cohort(n_subjects=1, duration_s=20, n_events=1, event_duration_s=5, seed=3)
     b = make_synthetic_cohort(n_subjects=1, duration_s=20, n_events=1, event_duration_s=5, seed=3)
     np.testing.assert_array_equal(a[0].data, b[0].data)
+
+
+def test_load_memory_maps_windows(tmp_path):
+    import numpy as np
+
+    from neurotrace.data.datasets.base import WindowedRecording
+
+    w = np.random.default_rng(0).standard_normal((6, 3, 8)).astype(np.float16)
+    rec = WindowedRecording("s1", "r1", 4.0, ["a", "b", "c"], w, np.zeros((6, 3, 2), np.float32),
+                            np.arange(6.0), np.zeros(6, bool), 2.0, 1.0)
+    rec.save(tmp_path / "r1.npz")
+    a = WindowedRecording.load(tmp_path / "r1.npz")
+    assert isinstance(a.windows, np.memmap) and (tmp_path / "mmap" / "r1.windows.npy").exists()
+    np.testing.assert_array_equal(a.windows, w)
+    np.testing.assert_array_equal(WindowedRecording.load(tmp_path / "r1.npz", mmap=False).windows, w)
