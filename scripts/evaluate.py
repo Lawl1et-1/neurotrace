@@ -29,8 +29,12 @@ def main(cfg: DictConfig) -> None:
     recs = load_dataset(cfg)
     print(f"{len(recs)} recordings, {len({r.subject for r in recs})} subjects, device {device}")
 
-    base = classical_baselines(cfg, recs, list(cfg.eval.baseline_methods), out_dir=out)
-    base.to_csv(out / "baselines.csv", index=False)
+    if cfg.eval.get("resume", False) and (out / "baselines.csv").exists():  # baselines need no training
+        base = pd.read_csv(out / "baselines.csv")
+        print("resuming: baselines.csv kept")
+    else:
+        base = classical_baselines(cfg, recs, list(cfg.eval.baseline_methods), out_dir=out)
+        base.to_csv(out / "baselines.csv", index=False)
     cv = run_cv(cfg, recs, device, out, list(cfg.eval.variants))
     summary = summarise(pd.concat([cv, base], ignore_index=True))
     summary.to_csv(out / "summary.csv", index=False)

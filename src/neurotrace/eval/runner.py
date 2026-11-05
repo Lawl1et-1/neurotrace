@@ -138,14 +138,25 @@ def synthetic_extras(rec: WindowedRecording, adj: np.ndarray | None) -> dict:
 
 def run_cv(cfg: DictConfig, recs: list[WindowedRecording], device: str, out_dir: Path,
            variants: list[str], log=print) -> pd.DataFrame:
-    """Train/evaluate every variant on every fold; returns one row per (variant, fold, recording)."""
+    """Train/evaluate every variant on every fold; returns one row per (variant, fold, recording).
+
+    With ``eval.resume=true`` the (variant, fold) pairs already in ``cv_rows.csv`` are kept and
+    skipped, so an interrupted run continues where it stopped (folds are deterministic per seed).
+    """
     ev = cfg.eval
     rows: list[dict] = []
+    done: set[tuple[str, int]] = set()
+    if ev.get("resume", False) and (out_dir / "cv_rows.csv").exists():
+        rows = pd.read_csv(out_dir / "cv_rows.csv").to_dict(orient="records")
+        done = {(r["variant"], int(r["fold"])) for r in rows}
+        log(f"resuming: {len(done)} (variant, fold) pairs already done")
     stride_s = recs[0].stride_s
     folds = list(leave_subjects_out(recs, n_folds=ev.n_folds, val_subjects=ev.val_subjects, seed=cfg.seed))
     for fi, (train_s, val_s, test_s) in enumerate(folds):
         log(f"=== fold {fi}: test {test_s} val {val_s}")
         for name in variants:
+            if (name, fi) in done:
+                continue
             vc = variant_cfg(cfg, VARIANTS[name])
             t0 = time.time()
             model, hist = fit(vc, by_subject(recs, train_s), by_subject(recs, val_s), device, log=lambda *_: None)
