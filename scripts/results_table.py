@@ -18,6 +18,7 @@ ORDER = ["full", "diffusion_gnn", "static_graph", "no_graph", "no_transformer", 
          "masked_objective", "supervised_head", "channel_cnn_lstm", "baseline_bandpower_dev",
          "baseline_pearson", "baseline_coherence", "baseline_granger", "baseline_pdc", "baseline_dtf",
          "combined_bp_graph", "combined_bp_granger"]
+TERMS_ORDER = ["full", "term_pred", "term_graph", "term_var", "term_pred_graph", "term_pred_var", "term_graph_var"]
 NAMES = {
     "full": "NEUROTRACE (learned graph + GAT + Transformer)", "diffusion_gnn": "– diffusion GNN instead of GAT",
     "static_graph": "– distance-prior graph only", "no_graph": "– no graph", "no_transformer": "– no Transformer",
@@ -27,6 +28,9 @@ NAMES = {
     "baseline_coherence": "Coherence deviation", "baseline_granger": "Granger (per window)",
     "baseline_pdc": "PDC (per window)", "baseline_dtf": "DTF (per window)",
     "combined_bp_graph": "Band power + learned-graph change", "combined_bp_granger": "Band power + Granger change",
+    "term_pred": "Prediction error only (GNN + Transformer)", "term_graph": "Learned-graph change only",
+    "term_var": "VAR forecast error only", "term_pred_graph": "Prediction error + graph change",
+    "term_pred_var": "Prediction error + VAR error", "term_graph_var": "Graph change + VAR error",
 }
 SHORT = {"full": "Full", "no_graph": "No graph", "static_graph": "Dist. graph", "supervised_head": "Superv.",
          "baseline_bandpower_dev": "Band power", "baseline_granger": "Granger", "combined_bp_graph": "BP + graph",
@@ -82,7 +86,7 @@ def analysis(dataset: str) -> None:
     ts = sorted(mf.target_fa_h.unique())
     print("| Detector | " + " | ".join(f"≤ {t:g} FA/h" for t in ts) + " |")
     print("|---|" + "---|" * len(ts))
-    for v, d in mf.sort_values("o").groupby("variant", sort=False):
+    for v, d in mf[~mf.variant.str.startswith("term_")].sort_values("o").groupby("variant", sort=False):
         cells = []
         for t in ts:
             r = d[d.target_fa_h == t].iloc[0]
@@ -98,6 +102,17 @@ def analysis(dataset: str) -> None:
         a = [f"{r[f'auroc_{k}_mean']:.3f}" if pd.notna(r[f"auroc_{k}_mean"]) else "—" for k in ("pred_err", "graph_change", "var_err")]
         sh = [f"{r[f'alarm_share_{k}']:.2f}" for k in ("pred_err", "graph_change", "var_err")]
         print(f"| {name(r.variant)} | " + " | ".join(a + sh) + " |")
+
+    ta = pd.read_csv(out / "term_ablation.csv").set_index("variant")
+    print("\nScore-term ablation of the full model (score rebuilt from the saved terms; all three = full model)\n")
+    fa = [c for c in ta.columns if c.startswith("sens_at_")]
+    print("| Score | Window AUROC | AUPRC | " + " | ".join(f"Sens. @ {c[8:-5]} FA/h" for c in fa) + " |")
+    print("|---|---|---|" + "---|" * len(fa))
+    for v in [v for v in TERMS_ORDER if v in ta.index]:
+        r = ta.loc[v]
+        label = "All three terms (= full model)" if v == "full" else name(v)
+        print(f"| {label} | {r.auroc_mean:.3f} ± {r.auroc_ci95:.3f} | {r.auprc_mean:.3f} ± {r.auprc_ci95:.3f} | "
+              + " | ".join(f"{r[c]:.2f}" for c in fa) + " |")
 
 
 if __name__ == "__main__":

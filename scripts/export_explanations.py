@@ -106,6 +106,25 @@ def results_tables(dataset: str) -> dict:
     return pd.read_csv(p).replace({np.nan: None}).to_dict(orient="records") if p.exists() else []
 
 
+ANALYSIS_FILES = ("per_patient", "wilcoxon", "matched_fa", "term_ablation", "term_dominance", "alarm_overlap")
+
+
+def analysis_tables(dataset: str) -> dict:
+    """The CSVs written by scripts/analyze_results.py, as records, so the site quotes them verbatim."""
+    out = {}
+    for name in ANALYSIS_FILES:
+        p = RESULTS_DIR / dataset / f"{name}.csv"
+        if p.exists():
+            out[name] = pd.read_csv(p).replace({np.nan: None}).to_dict(orient="records")
+    return out
+
+
+def update_index_tables(index: dict, dataset: str) -> dict:
+    index.setdefault("summary", {})[dataset] = results_tables(dataset)
+    index.setdefault("analysis", {})[dataset] = analysis_tables(dataset)
+    return index
+
+
 @hydra.main(config_path="../configs", config_name="config", version_base="1.3")
 def main(cfg: DictConfig) -> None:
     device = get_device(cfg.device)
@@ -157,7 +176,7 @@ def main(cfg: DictConfig) -> None:
             "duration_s": seg["times"][-1] + seg["window_s"] if seg["times"] else 0,
             "n_detected": len(seg["events"]), "n_labelled": len(seg["labels"]),
         })
-    index["summary"][name] = results_tables(name)
+    update_index_tables(index, name)
     index_path.write_text(json.dumps(to_jsonable(index), indent=1))
     print(f"wrote {len(segments)} segments to {out}")
 

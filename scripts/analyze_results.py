@@ -11,6 +11,8 @@ Writes to ``results/<dataset>/``:
 * ``term_dominance.csv``   - for each model variant: AUROC of each score term alone and each term's
                              share of the score at alarm windows.
 * ``alarm_overlap.csv``    - Jaccard overlap of alarm windows between model variants.
+* ``term_ablation.csv``    - the full model's score rebuilt from each term alone and from each pair:
+                             window AUROC / AUPRC and sensitivity at matched false-alarm rates.
 * ``summary.csv``          - rebuilt with the combined detectors appended (window metrics only).
 
 Combined detectors (no tuning, equal weights of causal robust z-scores, then the usual 5-window
@@ -36,7 +38,14 @@ from neurotrace.utils import RESULTS_DIR
 TARGETS = (0.5, 1.0, 2.0)
 TERMS = ("pred_err", "graph_change", "var_err")
 PAIRS = [("full", "no_graph"), ("full", "baseline_bandpower_dev"), ("combined_bp_graph", "baseline_bandpower_dev"),
-         ("combined_bp_graph", "combined_bp_granger"), ("full", "baseline_granger")]
+         ("combined_bp_graph", "combined_bp_granger"), ("full", "baseline_granger"),
+         ("full", "term_var"), ("term_pred", "term_var"), ("term_pred_graph", "term_var")]
+# score-term ablation of the full model: the score is causal_smooth(sum_k w_k z_k), so any subset of
+# terms is rebuilt exactly from the saved per-term z-scores ("pred" = GNN + Transformer prediction
+# error, "graph" = learned-graph change, "var" = VAR forecast error of the edge module)
+TERM_SETS = {"term_pred": ("pred_err",), "term_graph": ("graph_change",), "term_var": ("var_err",),
+             "term_pred_graph": ("pred_err", "graph_change"), "term_pred_var": ("pred_err", "var_err"),
+             "term_graph_var": ("graph_change", "var_err")}
 
 
 def load_scores(root: Path) -> dict[str, dict[str, dict]]:
@@ -57,6 +66,21 @@ def add_combined(scores: dict) -> None:
                 s = causal_smooth(d["z_raw"] + src[rec][key], 5)
                 scores[name][rec] = {**{k: d[k] for k in ("labels", "subject", "stride_s")}, "score": s,
                                      "threshold": np.nan, "fold": src[rec]["fold"]}
+
+
+def add_term_ablation(scores: dict, source: str = "full") -> None:
+    for rec, d in scores.get(source, {}).items():
+        for name, terms in TERM_SETS.items():
+            s = causal_smooth(sum(float(d[f"w_{k}"]) * d[f"z_{k}"] for k in terms), int(d["smooth"]))
+            scores[name][rec] = {**{k: d[k] for k in ("labels", "subject", "stride_s", "fold")}, "score": s,
+                                 "threshold": np.nan}
+
+
+def check_rebuild(scores: dict, source: str = "full") -> float:
+    """Largest gap between the saved score and its rebuild from all three terms (should be ~0)."""
+    gaps = [np.nanmax(np.abs(causal_smooth(sum(float(d[f"w_{k}"]) * d[f"z_{k}"] for k in TERMS), int(d["smooth"]))
+                             - d["score"])) for d in scores.get(source, {}).values()]
+    return float(max(gaps)) if gaps else float("nan")
 
 
 def per_record_rows(scores: dict) -> pd.DataFrame:
@@ -154,6 +178,8 @@ def main(dataset: str) -> None:
     if not scores:
         raise SystemExit(f"no saved scores in {out / 'scores'}; run evaluate.py first")
     add_combined(scores)
+    print(f"  rebuild check (all three terms vs saved full score): max gap {check_rebuild(scores):.2e}")
+    add_term_ablation(scores)
 
     rec_rows = per_record_rows(scores)
     per_patient = rec_rows.groupby(["variant", "subject"])[["auroc", "auprc"]].mean().reset_index()
@@ -171,13 +197,19 @@ def main(dataset: str) -> None:
         agg.append(r)
     pd.DataFrame(agg).to_csv(out / "matched_fa.csv", index=False)
 
+    ta = per_patient[per_patient.variant.isin(["full", *TERM_SETS])].groupby("variant")[["auroc", "auprc"]]
+    ta = ta.agg(["mean", ci95]).set_axis(["auroc_mean", "auroc_ci95", "auprc_mean", "auprc_ci95"], axis=1)
+    sens = pd.DataFrame(agg).pivot(index="variant", columns="target_fa_h", values="sensitivity_mean")
+    ta = ta.join(sens.rename(columns=lambda c: f"sens_at_{c:g}_fa_h"))
+    ta.reset_index().to_csv(out / "term_ablation.csv", index=False)
+
     td, ov = term_dominance(scores)
     td.to_csv(out / "term_dominance.csv", index=False)
     ov.to_csv(out / "alarm_overlap.csv", index=False)
 
     # summary: evaluate.py rows (with event metrics at the calibrated threshold) + combined detectors
     base = pd.concat([pd.read_csv(out / "cv_rows.csv"), pd.read_csv(out / "baselines.csv")], ignore_index=True)
-    comb = rec_rows[rec_rows.variant.str.startswith("combined_")].assign(
+    comb = rec_rows[rec_rows.variant.str.startswith(("combined_", "term_"))].assign(
         n_events=0, detected=0, false_alarms=0, hours=0.0)  # no calibrated threshold: event columns stay empty
     summarise(pd.concat([base, comb], ignore_index=True)).to_csv(out / "summary.csv", index=False)
     print(f"wrote analysis to {out}")
