@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import type { Edge, Segment } from "../data";
@@ -16,10 +16,27 @@ const css = (name: string) => getComputedStyle(document.documentElement).getProp
 export default function Head3D({ seg, edges, litPath, hot }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const api = useRef<{ setEdges: (e: Edge[], lit: Props["litPath"], hot: number | null) => void } | null>(null);
+  const [failed, setFailed] = useState<string | null>(null);
 
   useEffect(() => {
     const el = host.current!;
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    if (!webglAvailable()) {
+      setFailed("This browser has WebGL turned off or unavailable, so the 3D head cannot be drawn.");
+      return;
+    }
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    } catch {
+      setFailed("The browser refused to create a WebGL context, so the 3D head cannot be drawn.");
+      return;
+    }
+    setFailed(null);
+    const onLost = (e: Event) => {
+      e.preventDefault();
+      setFailed("The 3D view lost its graphics context (the GPU was reset or too many 3D views were open).");
+    };
+    renderer.domElement.addEventListener("webglcontextlost", onLost);
     renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
     el.appendChild(renderer.domElement);
     const scene = new THREE.Scene();
@@ -139,7 +156,15 @@ export default function Head3D({ seg, edges, litPath, hot }: Props) {
       cancelAnimationFrame(raf);
       ro.disconnect();
       controls.dispose();
+      renderer.domElement.removeEventListener("webglcontextlost", onLost);
+      scene.traverse((o) => {
+        const m = o as THREE.Mesh;
+        m.geometry?.dispose();
+        const mat = m.material as THREE.Material | THREE.Material[] | undefined;
+        (Array.isArray(mat) ? mat : mat ? [mat] : []).forEach((x) => x.dispose());
+      });
       renderer.dispose();
+      renderer.forceContextLoss(); // browsers allow only ~16 live contexts; free this one now
       el.removeChild(renderer.domElement);
       api.current = null;
     };
@@ -149,5 +174,24 @@ export default function Head3D({ seg, edges, litPath, hot }: Props) {
     api.current?.setEdges(edges, litPath, hot);
   }, [edges, litPath, hot]);
 
-  return <div ref={host} style={{ position: "absolute", inset: 0 }} aria-label="3D head with directed dependency arcs; drag to rotate" role="img" />;
+  return (
+    <div ref={host} style={{ position: "absolute", inset: 0 }} {...(failed ? {} : { role: "img", "aria-label": "3D head with directed dependency arcs; drag to rotate" })}>
+      {failed && (
+        <p className="empty" role="status" style={{ position: "absolute", inset: 0, padding: 24 }}>
+          {failed} The topomap shows the same edges and paths.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function webglAvailable(): boolean {
+  try {
+    const c = document.createElement("canvas");
+    const gl = c.getContext("webgl2") ?? c.getContext("webgl");
+    (gl as WebGLRenderingContext | null)?.getExtension("WEBGL_lose_context")?.loseContext();
+    return !!gl;
+  } catch {
+    return false;
+  }
 }

@@ -109,10 +109,15 @@ export function loadSegment(id: string): Promise<Segment> {
   if (!cache.has(id)) {
     cache.set(
       id,
-      fetch(`${base}data/seg/${id}.json`).then((r) => {
-        if (!r.ok) throw new Error(`${id}: HTTP ${r.status}`);
-        return r.json();
-      }),
+      fetch(`${base}data/seg/${id}.json`)
+        .then((r) => {
+          if (!r.ok) throw new Error(`${id}: HTTP ${r.status}`);
+          return r.json();
+        })
+        .catch((e) => {
+          cache.delete(id); // a failed load must not be cached: picking the recording again retries
+          throw e;
+        }),
     );
   }
   return cache.get(id)!;

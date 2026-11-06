@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Component, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { edgesAt, eventAt, fmtTime, loadSegment, type Index, type Segment } from "../data";
 import { Arrow, Code, Pause, Play, Step } from "./Icons";
 import MontageMap from "./MontageMap";
@@ -200,9 +200,11 @@ export default function Explorer({ index }: { index: Index }) {
               <MontageMap seg={seg} edges={edges} litPath={litPath} hot={hot} setHot={setHot} truth={truth} showTruth={isSyn && showTruth} showChange={showChange} />
             )}
             {seg && view === "3d" && (
-              <Suspense fallback={<p className="empty">Loading the 3D head…</p>}>
-                <Head3D seg={seg} edges={edges} litPath={litPath} hot={hot} />
-              </Suspense>
+              <ViewBoundary key={seg.id} onTopomap={() => setView("2d")}>
+                <Suspense fallback={<p className="empty">Loading the 3D head…</p>}>
+                  <Head3D seg={seg} edges={edges} litPath={litPath} hot={hot} />
+                </Suspense>
+              </ViewBoundary>
             )}
           </div>
         </div>
@@ -253,6 +255,26 @@ export default function Explorer({ index }: { index: Index }) {
       </section>
     </>
   );
+}
+
+/** Keeps a failure of the 3D view (its code chunk not loading, a WebGL error) from taking down the page. */
+class ViewBoundary extends Component<{ children: ReactNode; onTopomap: () => void }, { error: boolean }> {
+  state = { error: false };
+  static getDerivedStateFromError() {
+    return { error: true };
+  }
+  render() {
+    if (!this.state.error) return this.props.children;
+    return (
+      <div className="empty" role="status" style={{ padding: 24 }}>
+        <p style={{ margin: 0 }}>The 3D head could not be loaded in this browser. The topomap shows the same edges and paths.</p>
+        <p style={{ display: "flex", gap: 8, marginTop: 12 }}>
+          <button className="btn ghost" onClick={() => location.reload()}>Reload the page</button>
+          <button className="btn ghost" onClick={this.props.onTopomap}>Back to the topomap</button>
+        </p>
+      </div>
+    );
+  }
 }
 
 function Timeline({ seg, t, setT, selected, onEvent }: { seg: Segment; t: number; setT: (v: number) => void; selected: number | null; onEvent: (i: number) => void }) {

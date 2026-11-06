@@ -119,11 +119,21 @@ export default function MontageMap({ seg, edges, litPath, hot, setHot, truth, sh
               onMouseLeave={() => setHot(null)}
               onFocus={() => setHot(i)}
               onBlur={() => setHot(null)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setHot(i);
+                }
+                if (e.key === "Escape") setHot(null);
+              }}
+              className="node"
               tabIndex={0}
               role="button"
               aria-label={`${seg.ch_names[i]}${lit ? ", on the propagation path" : ""}`}
               style={{ cursor: "pointer" }}
             >
+              {/* keyboard focus ring: drawn on the node itself, shown only on :focus-visible (see styles.css) */}
+              <circle className="focus-ring" r={R * 1.4} fill="none" stroke="var(--red)" strokeWidth={2.5} vectorEffect="non-scaling-stroke" />
               {isTruthSeed && <circle r={R * 1.55} fill="none" stroke="var(--green)" strokeWidth="0.012" strokeDasharray="0.03 0.02" />}
               <circle r={R} fill={lit ? "var(--red)" : hot === i ? "var(--ink)" : "var(--paper)"} stroke={lit ? "var(--red)" : "var(--ink)"} strokeWidth={isSeed ? 0.024 : 0.012} />
               <text
